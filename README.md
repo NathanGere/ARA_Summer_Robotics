@@ -7,6 +7,4 @@ https://github.com/hello-robot
 ## Authors
 Nathan
 ### Co-Authors
-Riley
-Kay
-Matthew
+Riley, Kay, Matthew
