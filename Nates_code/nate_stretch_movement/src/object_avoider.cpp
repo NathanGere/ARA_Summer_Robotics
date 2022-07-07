@@ -2,7 +2,15 @@
 #include<sensor_msgs/LaserScan.h>
 #include<geometry_msgs/Twist.h>
 
+//this program will have stretch drive forward until it sees an object
+//if the object gets closer, stretch will back up
+
+//I have a step ladder. I never met my real ladder ;(
+
+//global publisher to be used in main and callback
 ros::Publisher pub;
+
+//variables for parameters
 std::string cmd_vel_output;
 std::string laser_scan;
 float forward_speed;
@@ -10,14 +18,21 @@ float backward_speed;
 
 void callback(const sensor_msgs::LaserScan::ConstPtr &scan)
 {
+    //variable to be given values to be published
     geometry_msgs::Twist motorizer;
-    int size = scan->ranges.size();
-    float front = scan->ranges[(size-1)/2];
-    float back = scan->ranges[0];
 
+    //creates an integer that is the total number of indices of the lidar array
+    int size = scan->ranges.size();
+
+    //scan distance at specific indices for directly in front of and behind the robot
+    float front = scan->ranges[1360];
+    float back = scan->ranges[300];
+
+    //variables to set up the switch statement
     int f = 0;
     int b = 0;
 
+    //conditions to set up switch statement
     if(front < 1.1)
     {
         f = 1;
@@ -31,14 +46,22 @@ void callback(const sensor_msgs::LaserScan::ConstPtr &scan)
 
     switch(tracker)
     {
+        //there is nothing behind or in front of the robot
         case 0:
             motorizer.linear.x = forward_speed;
+            break;
+        
+        //there is a wall in front of the robot
         case 1:
             motorizer.linear.x = backward_speed;
             break;
+        
+        //there is a wall behind the robot
         case 2:
             motorizer.linear.x = forward_speed;
             break;
+        
+        //there are walls behind and in front of the robot
         case 3:
             motorizer.linear.x = 0.0;
             break;
@@ -62,6 +85,7 @@ int main(int argc, char** argv)
     {   
         n.param<float>("forward_speed", forward_speed, 0.5);
         n.param<float>("backward_speed", backward_speed, -0.5);
+
         ros::spinOnce();
         loop_rate.sleep();
     }
