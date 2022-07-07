@@ -1,0 +1,6 @@
+<launch>
+    <!-- Object avoider launch file -->
+    <node pkg="nate_stretch_movement" type="object_avoidance_node" name="ObjectAvoider" output="screen">
+        <rosparam file="$(find nate_stretch_movement)/params/object_avoider_params.yaml" command="load"/>
+    </node>
+</launch>

@@ -1,0 +1,4 @@
+cmd_vel_output: "/stretch_diff_drive_controller/cmd_vel"
+laser_scan: "/scan"
+forward_speed: 0.5
+backward_speed: -0.5

@@ -1,0 +1,2 @@
+cloud_param: "/camera/depth/color/points"
+cloud_output: "camera_depth_color_points_downsample"
