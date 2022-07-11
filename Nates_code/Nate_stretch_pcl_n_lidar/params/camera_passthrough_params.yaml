@@ -1,0 +1,5 @@
+cloud_param: "/camera/depth/color/points"
+cloud_output: "camera_depth_color_points_passthrough"
+filter_field_name: "y"
+filter_limit_min: -1.0
+filter_limit_max: 1.0
