@@ -1,6 +1,6 @@
 # Nate's Code
 ## Overview
-Objectice Nathan was trying to reach was trying get the robot to make an acurate map of a room with... this was completed with assistance from a Gazebo world
+The objectice Nathan was trying to reach was trying get the robot to make an acurate map of a room with... this was completed with assistance from a Gazebo world
 
 ## Running Demo
 ```bash
