@@ -1,0 +1,8 @@
+Front: scan->ranges[1360]
+Front Right: scan->ranges[1085]
+Right: scan->ranges[820]
+Back Right: scan->ranges[565]
+Back: scan->ranges[300]
+Back Left: scan->ranges[40]
+Left: scan->ranges[1890]
+Front Left: scan->ranges[1620]
