@@ -1,26 +1,28 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
+//#include <Nate_stretch_pcl_n_lidar/laser_scan.h> //service that calls laser scan values
 
-//this code will have a robot drive forward, hugging a wall on its right from a distance of 0.5 meters
-
-//global publisher
+//global publisher, subscriber, and client
 ros::Publisher pub;
+ros::Subscriber sub;
+//ros::ServiceClient client;
 
-//global geometry message to be published to cmd_vel
-geometry_msgs::Twist motorizer;
-
-//setting up parameters
+//parameters
 std::string cmd_vel_output;
 std::string laser_scan;
 
-//global subscriber
-ros::Subscriber sub;
+//global variables
+//conditions
+bool needs_setup; //tells main if it needs to recalculate conditions
+bool aligned; //will track if the robot is aligned with a wall on its right
+bool space_to_move; //will track if the robot can move forward
+//trackers
+int index_mem; //keeps record of index of nearest wall for scan values
+float distance_mem; //keeps record of distance to nearest wall
 
-//global variables for callbacks
-float mem;
-
-void wall_finder_cb(const sensor_msgs::LaserScanConstPtr &scan)
+//will recalculate the global conditions and trackers when called
+void var_set_up(const sensor_msgs::LaserScan::ConstPtr &scan)
 {
     //number of indices in laser scan array
     int size = scan->ranges.size();
@@ -29,64 +31,252 @@ void wall_finder_cb(const sensor_msgs::LaserScanConstPtr &scan)
     float right = scan->ranges[820];
     float center = scan->ranges[1360];
     float left = scan->ranges[1890];
-    
-    //this loop will attempt to orient the robot so that it is parallel to a wall on its right
-    float current = right;
-    float mem = 1000;
-    ros::Rate pause_rate(0.1);
-    ROS_INFO("Finding wall . . .");
-    while(current < mem)
+
+    //loop iteration variable
+    int i = 0;
+    index_mem = 100;
+    distance_mem = 100.0;
+    //The following loop with iterate through the entire array of laser scans to find the index of the nearest wall and the wall's distance
+    while (i < size)
     {
-        mem = current;
+        if(scan->ranges[i] < scan->ranges[index_mem])
+        {
+            distance_mem = scan->ranges[i];
+            index_mem = i;
+        }
+    
+        i++;
+    }
+
+    //uses variables from loop to determine alignment
+    if(scan->ranges[820] < distance_mem + 0.1 && scan->ranges[820] > distance_mem - 0.1)
+    {
+        aligned = true;
+    }
+    else
+    {
+        aligned = false;
+    }
+
+    //uses scan values to determine if there is space for the robot to move forward
+    if(scan->ranges[1360] > 1.0)
+    {
+        space_to_move = true;
+    }
+    else
+    {
+        space_to_move = false;
+    }
+
+    //variable setup complete
+    needs_setup = false;
+    ROS_INFO("Variables have been recalculated.");
+}
+//will align the robot so that the nearest wall is aligned with its right side
+void aligner(const sensor_msgs::LaserScan::ConstPtr &scan)
+{   
+    geometry_msgs::Twist motorizer;
+    if(scan->ranges[820] < distance_mem + 0.02 && scan->ranges[820] > distance_mem - 0.02)
+    {
+        aligned = true; //since the right index is aligned with the nearest wall, this condition will change
+        ROS_INFO("Alignment complete");
+    }
+    else
+    {   
+        //since the right side is not aligned, the robot will turn to its right
         motorizer.angular.z = -0.5;
         pub.publish(motorizer);
-        pause_rate.sleep();
-        motorizer.angular.z = 0.0;
-        pub.publish(motorizer);
-        current = scan->ranges[820];
+        ROS_INFO("Realigning . . . right = %f, nearest wall = %f", scan->ranges[820], distance_mem);
+    }
+
+    //will check forward space after alignment to make sure the robot can proceed to the next step in main
+    if(scan->ranges[1360] > 1.0)
+    {
+        space_to_move = true;
+    }
+    else
+    {
+        space_to_move = false;
     }
 }
-void mover_cb(const sensor_msgs::LaserScanConstPtr &scan)
-{
-    float distance_keeper = scan->ranges[820];
+//will turn the robot to its left 45 degrees
+void turn_left_move()
+{   
+    geometry_msgs::Twist motorizer;
+
+    //length of turning time in hz
+    ros::Rate turn_time(1.0);
+
+    //publishing turning speed
+    motorizer.angular.z = 0.9;
+    motorizer.linear.x = 0.5;
+    pub.publish(motorizer);
+    ROS_INFO("Turning left");
+
+    //pause before stopping
+    turn_time.sleep();
+
+    //stopping robot
+    motorizer.angular.z = 0.0;
+    pub.publish(motorizer);
+    ROS_INFO("Turning complete");
+
+    //global variables are no longer accurate
+    needs_setup = true;
+}
+void turn_left()
+{   
+    geometry_msgs::Twist motorizer;
+
+    //length of turning time in hz
+    ros::Rate turn_time(1.0);
+
+    //publishing turning speed
+    motorizer.angular.z = 0.9;
+    pub.publish(motorizer);
+    ROS_INFO("Turning left");
+
+    //pause before stopping
+    turn_time.sleep();
+
+    //stopping robot
+    motorizer.angular.z = 0.0;
+    pub.publish(motorizer);
+    ROS_INFO("Turning complete");
+
+    //global variables are no longer accurate
+    needs_setup = true;
+}
+//will turn the robot to its right 45 degrees
+void turn_right_move()
+{   
+    geometry_msgs::Twist motorizer;
+
+    //length of turning time in hz
+    ros::Rate turn_time(1.0);
+
+    //publishing turning speed
+    motorizer.angular.z = -0.7;
+    motorizer.angular.x = 1.0;
+    pub.publish(motorizer);
+    ROS_INFO("Turning right");
+
+    //pause before stopping
+    turn_time.sleep();
+
+    //stopping robot
+    motorizer.angular.z = 0.0;
+    pub.publish(motorizer);
+    ROS_INFO("Turning complete");
+
+    //global variables are no longer accurate
+    needs_setup = true;
+}
+//will move the robot forward
+void move_forward(const sensor_msgs::LaserScan::ConstPtr &scan)
+{   
+    geometry_msgs::Twist motorizer;
+
+    //number of indices in laser scan array
+    int size = scan->ranges.size();
+
+    //floats will store the distance to nearest object at cherrypicked indices
+    float right = scan->ranges[820];
     float center = scan->ranges[1360];
-    if(distance_keeper < mem + 0.1 && distance_keeper > mem - 0.1)
-    {
-        if(center < 1.0)
+    float left = scan->ranges[1890];
+
+    if(center > 1.0)
+    {      
+        if(right < distance_mem + 0.5 && right > distance_mem -0.5)
         {
-            ROS_INFO("\nTurning");
-            motorizer.angular.z = 0.5;
-            ros::Rate turn_time(2.0);
-            pub.publish(motorizer);
-            turn_time.sleep();    
-        }
-        else
-        {   
-            ROS_INFO("\nMoving Forward");
             motorizer.linear.x = 1.0;
             pub.publish(motorizer);
+            ROS_INFO("Moving forward");
+        }
+        else
+        {
+            turn_right_move();
+            needs_setup = true;
         }
     }
     else
     {
-        ROS_INFO("\nRealigning . . . ");
-        motorizer.angular.z = -0.5;
-        pub.publish(motorizer);
+        if(left > 1.5 && center > 0.5)
+        {
+            turn_left_move();
+        }
+        else if(left > 1.5)
+        {
+            turn_left();
+        }
+        needs_setup = true;
+    }
+    /*
+    //length of move time in hz
+    ros::Rate turn_time(0.5);
+
+    //publishing turning speed
+    motorizer.linear.x = 1.0;
+    pub.publish(motorizer);
+    ROS_INFO("Moving forward");
+
+    //pause before stopping
+    turn_time.sleep();
+
+    //stopping robot
+    motorizer.linear.x = 0.0;
+    pub.publish(motorizer);
+    ROS_INFO("Movement complete");
+
+    //global variables are no longer accurate
+    needs_setup = true;
+    */
+}
+//decides which of the above methods to call
+void decider(const sensor_msgs::LaserScan::ConstPtr &scan)
+{
+    //check if variables are set up
+    if(needs_setup)
+    {
+        var_set_up(scan);
+    }
+
+    //choosing action to take
+    if(aligned)
+    {   
+        if(space_to_move)
+        {
+            move_forward(scan);
+        }
+        else
+        {
+            turn_left_move();
+        }
+    }
+    else
+    {
+        aligner(scan);
     }
 }
 int main(int argc, char** argv)
 {
     //setting up node
-    ros::init(argc, argv, "right_wall_hugger_node");
+    ros::init(argc, argv, "wall_follower_node");
     ros::NodeHandle n;
 
+    //setting up parameters
     //for movement on the actual robot, cmd_vel_output: "/stretch/cmd_vel"
     n.param<std::string>("cmd_vel_output", cmd_vel_output, "/stretch_diff_drive_controller/cmd_vel");
     n.param<std::string>("laser_scan", laser_scan, "/scan");
 
+    //setting up publisher
     pub = n.advertise<geometry_msgs::Twist>(cmd_vel_output, 1000);
-    sub = n.subscribe(laser_scan, 1000, wall_finder_cb);
-    //sub = n.subscribe(laser_scan, 1000, mover_cb);
+    
+    //condition will make var_set_up run once the subscriber runs
+    needs_setup = true;
+
+    //subscribes to laser scan and calls a method which decides which action to take
+    sub = n.subscribe<sensor_msgs::LaserScan>(laser_scan, 1000, decider);
 
     ros::Rate loop_rate(10);
     while(ros::ok())
@@ -95,51 +285,5 @@ int main(int argc, char** argv)
         loop_rate.sleep();
     }
     
-    return 0;
-}
-#include <ros/ros.h>
-#include <Nate_stretch_pcl_n_lidar/laser_scan.h>
-#include <sensor_msgs/LaserScan.h>
-
-std::string laser_scan;
-ros::ServiceClient client;
-
-void caller_cb(const sensor_msgs::LaserScan::ConstPtr &scan)
-{
-    Nate_stretch_pcl_n_lidar::laser_scan srv;
-
-    srv.request.header.seq = scan->header.seq;
-    srv.request.header.stamp = scan->header.stamp;
-    srv.request.header.frame_id = scan->header.frame_id;
-    srv.request.angle_min = scan->angle_min;
-    srv.request.angle_max = scan->angle_max;
-    srv.request.angle_increment = scan->angle_increment;
-    srv.request.scan_time = scan->scan_time;
-    srv.request.range_min = scan->range_min;
-    srv.request.range_max = scan->range_max;
-    srv.request.ranges = scan->ranges;
-    srv.request.intensities = scan->intensities;
-
-    if(client.call(srv))
-    {
-        ROS_INFO("Scan values updated");
-    }
-    else
-    {
-        ROS_ERROR("Failed to update scan values");
-    }
-}
-int main(int argc, char** argv)
-{
-    ros::init(argc, argv, "lidar_client_node");
-    ros::NodeHandle n;
-
-    n.param<std::string>("laser_scan", laser_scan, "/scan");
-
-    client = n.serviceClient<Nate_stretch_pcl_n_lidar::laser_scan>("lidar_values");
-    ros::Subscriber sub = n.subscribe(laser_scan, 1000, caller_cb);
-
-    ros::spin();
-
     return 0;
 }
