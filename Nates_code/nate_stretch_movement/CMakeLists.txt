@@ -145,6 +145,9 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(object_avoidance_node src/object_avoider.cpp)
 add_executable(race_solving_node src/race_solver.cpp)
+add_executable(right_wall_hugger_node src/right_wall_hugger.cpp)
+add_executable(wall_tf_publisher_node src/wall_tf_publisher.cpp)
+add_executable(wall_tf_listener_node src/wall_tf_listener.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -156,12 +159,24 @@ add_executable(race_solving_node src/race_solver.cpp)
 ## same as for the library above
 add_dependencies(object_avoidance_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(race_solving_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(right_wall_hugger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wall_tf_publisher_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wall_tf_listener_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_avoidance_node
    ${catkin_LIBRARIES}
 )
 target_link_libraries(race_solving_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(right_wall_hugger_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(wall_tf_publisher_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(wall_tf_listener_node
    ${catkin_LIBRARIES}
 )
 

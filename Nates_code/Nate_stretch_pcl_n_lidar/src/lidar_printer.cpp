@@ -25,10 +25,9 @@ void callback(const sensor_msgs::LaserScan::ConstPtr &scan)
     */
     while (i < size)
     {
-        if(scan->ranges[i] < 10)
-        {
-            ROS_INFO("Range at scan->ranges[%d]: %f", i, scan->ranges[i]);
-        }
+        
+        ROS_INFO("Range at scan->ranges[%d]: %f", i, scan->ranges[i]);
+    
         i++;
     }
     
