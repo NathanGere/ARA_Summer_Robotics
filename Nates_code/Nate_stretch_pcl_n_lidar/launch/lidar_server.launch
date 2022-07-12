@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="Nate_stretch_pcl_n_lidar" type="lidar_server_node" name="Lidar_Server_Node" output="screen"/>
+</launch>

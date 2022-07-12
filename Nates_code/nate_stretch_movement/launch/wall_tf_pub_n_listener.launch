@@ -1,0 +1,19 @@
+<launch>
+    <!-- Launch File for wall_tf_publisher and listener -->
+    <node pkg="nate_stretch_movement" type="wall_tf_publisher_node" name="Tf_Publisher_Node" output="screen">
+        <param name="topic_name" type="string" value="/robot/base_scan"/>
+        <param name="closet_wall" type="string" value="/nearest_wall"/>
+        <param name="closet_wall_right" type="string" value="/nearest_wall_right"/>
+        <param name="closet_wall_center" type="string" value="/nearest_wall_center"/>
+        <param name="closet_wall_left" type="string" value="/nearest_wall_left"/>
+        <param name="laser_frame" type="string" value="/scan"/>
+    </node>
+    <node pkg="nate_stretch_movement" type="wall_tf_listener_node" name="Tf_Listener_Node" output="screen">
+        <param name="topic_name" type="string" value="/robot/base_scan"/>
+        <param name="closet_wall" type="string" value="/nearest_wall"/>
+        <param name="closet_wall_right" type="string" value="/nearest_wall_right"/>
+        <param name="closet_wall_center" type="string" value="/nearest_wall_center"/>
+        <param name="closet_wall_left" type="string" value="/nearest_wall_left"/>
+        <param name="laser_frame" type="string" value="/scan"/>
+    </node>
+</launch>
