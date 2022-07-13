@@ -1,0 +1,15 @@
+Hello fellow programmer and welcome to this introduction to python directory!!
+This is for Python 3.
+
+Before we begin, these files follow the youtube tutorial by Mosh Hemedani at Programming with Mosh on youtube.
+Here's the link to follow along: https://youtu.be/_uQrJ0TkZlc 
+Its an amazing tutorial and its the backbone of these files.
+
+Some things are different in this tutorial to make learning easier, but they are not good practice.
+    - Comments
+            There are many, many comments in this tutorial to guide you through the process, and while commenting is normally great, you don't want to use it to directly explain what is going on in the code. That would be redundant for future readers. While it is helpful for learning, don't be redundant with the code you write in the future
+    - File Naming
+            Do not put periods, slashes, spaces, or other unusual keys in file names. It is done here to show a clear path to follow, but it is EXTREMELY bad practice for the real world. File names should normally only have lowercase letters and underscores instead of spaces to seperate words
+
+That being said, have fun with this tutorial. Hopefully you watch the video while you view these files. Start at folder 1.0 and work your way down the list. The video is about 6 hours long, but I don't include anything past the random values section, so the whole experience is only around 4 hours long. This was made in July of 2022, so if the video is changed or taken down, then my apologies, follow along as best you can.
+
