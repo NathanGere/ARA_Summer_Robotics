@@ -20,6 +20,7 @@ bool space_to_move; //will track if the robot can move forward
 //trackers
 int index_mem; //keeps record of index of nearest wall for scan values
 float distance_mem; //keeps record of distance to nearest wall
+int alignment_tracker; //keeps track of consecutive callings of aligner method
 
 //will recalculate the global conditions and trackers when called
 void var_set_up(const sensor_msgs::LaserScan::ConstPtr &scan)
@@ -68,6 +69,9 @@ void var_set_up(const sensor_msgs::LaserScan::ConstPtr &scan)
         space_to_move = false;
     }
 
+    //reset alignment_tracker
+    alignment_tracker = 0;
+
     //variable setup complete
     needs_setup = false;
     ROS_INFO("Variables have been recalculated.");
@@ -98,6 +102,15 @@ void aligner(const sensor_msgs::LaserScan::ConstPtr &scan)
     {
         space_to_move = false;
     }
+
+    //var will keep track of consecutive callings of this method to prevent infinite loops
+    alignment_tracker = alignment_tracker + 1;
+    if(alignment_tracker > 50)
+    {   
+        //something must be wrong if it is called 50 times, so the variables will be recalculated
+        needs_setup = true;
+    }
+
 }
 //will turn the robot to its left 45 degrees
 void turn_left_move()
@@ -153,7 +166,7 @@ void turn_right_move()
     geometry_msgs::Twist motorizer;
 
     //length of turning time in hz
-    ros::Rate turn_time(1.0);
+    ros::Rate turn_time(0.5);
 
     //publishing turning speed
     motorizer.angular.z = -0.7;
@@ -187,11 +200,18 @@ void move_forward(const sensor_msgs::LaserScan::ConstPtr &scan)
 
     if(center > 1.0)
     {      
-        if(right < distance_mem + 0.5 && right > distance_mem -0.5)
+        if(right < distance_mem + 0.1 && right > distance_mem -0.1)
         {
             motorizer.linear.x = 1.0;
             pub.publish(motorizer);
             ROS_INFO("Moving forward");
+        }
+        else if(right > distance_mem)
+        {
+            motorizer.linear.x = 1.0;
+            motorizer.angular.z = -0.1;
+            pub.publish(motorizer);
+            ROS_INFO("Moving forward and getting closer to wall");
         }
         else
         {
@@ -274,6 +294,8 @@ int main(int argc, char** argv)
     
     //condition will make var_set_up run once the subscriber runs
     needs_setup = true;
+    //just to make sure it aligns at the start
+    aligned = false;
 
     //subscribes to laser scan and calls a method which decides which action to take
     sub = n.subscribe<sensor_msgs::LaserScan>(laser_scan, 1000, decider);

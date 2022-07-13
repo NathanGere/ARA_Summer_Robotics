@@ -59,7 +59,7 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
- add_service_files(
+add_service_files(
    FILES
    laser_scan.srv
 )
