@@ -1,5 +1,0 @@
-<launch>
-    <node pkg="Nate_stretch_pcl_n_lidar" type="cam_downsample_n_passthrough_node" name="Camera_Downsample_n_Passthrough_Node" output="screen">
-        <rosparam file="$(find Nate_stretch_pcl_n_lidar)/params/cam_downsample_n_passthrough.yaml" command="load"/>
-    </node>
-</launch>

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(Nate_stretch_pcl_n_lidar)
+project(mapping_and_navigation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -9,13 +9,11 @@ project(Nate_stretch_pcl_n_lidar)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  move_base
   nav_msgs
-  pcl_ros
   roscpp
   rospy
   sensor_msgs
-  std_msgs
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -59,10 +57,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   laser_scan.srv
-)
+# add_service_files(
+#   FILES
+#   Service1.srv
+#   Service2.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -72,10 +71,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs #   nav_msgs#   sensor_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   geometry_msgs#   nav_msgs#   sensor_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,8 +107,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES Nate_stretch_pcl_n_lidar
-#   CATKIN_DEPENDS message_runtime
+#  LIBRARIES nate_mapping_and_navigation
+#  CATKIN_DEPENDS geometry_msgs move_base nav_msgs roscpp rospy sensor_msgs
 #  DEPENDS system_lib
 )
 
@@ -126,7 +125,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/Nate_stretch_pcl_n_lidar.cpp
+#   src/${PROJECT_NAME}/nate_mapping_and_navigation.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -137,12 +136,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(camera_pcl_downsampler_node src/camera_downsample.cpp)
-add_executable(lidar_print_node src/lidar_printer.cpp)
-add_executable(camera_passthrough_node src/camera_passthrough.cpp)
-add_executable(cam_downsample_n_passthrough_node src/cam_downsample_n_passthrough.cpp)
-add_executable(lidar_server_node src/lidar_server.cpp)
-add_executable(lidar_client_node src/lidar_client.cpp)
+# add_executable(${PROJECT_NAME}_node src/nate_mapping_and_navigation_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -152,33 +146,12 @@ add_executable(lidar_client_node src/lidar_client.cpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-add_dependencies(camera_pcl_downsampler_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(lidar_print_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(camera_passthrough_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(cam_downsample_n_passthrough_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(lidar_server_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(lidar_client_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(camera_pcl_downsampler_node
-   ${catkin_LIBRARIES}
-)
-target_link_libraries(lidar_print_node
-   ${catkin_LIBRARIES}
-)
-target_link_libraries(camera_passthrough_node
-   ${catkin_LIBRARIES}
-)
-target_link_libraries(cam_downsample_n_passthrough_node
-   ${catkin_LIBRARIES}
-)
-target_link_libraries(lidar_server_node
-   ${catkin_LIBRARIES}
-)
-target_link_libraries(lidar_client_node
-   ${catkin_LIBRARIES}
-)
-
+# target_link_libraries(${PROJECT_NAME}_node
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -227,7 +200,7 @@ target_link_libraries(lidar_client_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_Nate_stretch_pcl_n_lidar.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_nate_mapping_and_navigation.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

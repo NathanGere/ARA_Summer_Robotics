@@ -1,6 +1,0 @@
-<launch>
-    <node pkg="Nate_stretch_pcl_n_lidar" type="lidar_server_node" name="Lidar_Server_Node" output="screen"/>
-    <node pkg="Nate_stretch_pcl_n_lidar" type="lidar_client_node" name="Lidar_Client_Node" output="screen">
-        <rosparam file="$(find Nate_stretch_pcl_n_lidar)/params/lidar_client_params.yaml" command="load"/>
-    </node>
-</launch>

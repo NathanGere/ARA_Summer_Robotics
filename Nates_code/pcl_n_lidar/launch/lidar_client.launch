@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="pcl_n_lidar" type="lidar_client_node" name="Lidar_Client_Node" output="screen">
+        <rosparam file="$(find pcl_n_lidar)/params/lidar_client_params.yaml" command="load"/>
+    </node>
+</launch>

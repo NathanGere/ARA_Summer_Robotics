@@ -1,0 +1,6 @@
+<launch>
+    <!-- Camera Passthrough Launch -->
+    <node pkg="pcl_n_lidar" type="camera_passthrough_node" name="Camera_Passthrough_Node" output="screen">
+        <rosparam file="$(find pcl_n_lidar)/params/camera_passthrough_params.yaml" command="load"/>
+    </node>
+</launch>
