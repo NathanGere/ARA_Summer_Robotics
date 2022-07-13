@@ -1,0 +1,7 @@
+<launch>
+
+    <node pkg="matt_seek_tracker_n_user" type="seeker_client_node" name="Seeker_Client_Node" output="screen" />
+
+    <node pkg="matt_seek_tracker_n_user" type="seeker_server_node" name="Seeker_Server_Node" output="screen" />
+
+</launch>

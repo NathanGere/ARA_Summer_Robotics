@@ -1,4 +1,5 @@
-bool input
+bool tracker
+bool human
 ---
 bool tracker
-bool person
+bool human

@@ -3,13 +3,14 @@
 
 bool function_seeker(matt_seek_tracker_n_user::seeker::Request  &req, matt_seek_tracker_n_user::seeker::Response &res) {
 
-    return true;
+    res.human = req.human;
+    res.tracker = req.tracker;
+ 
 }
 
-int main (int argc, const char **argv) {
-    ros::init(argc, argv, "seeker_server");
+int main (int argc, char **argv) {
+    ros::init(argc, argv, "seeker_server_node");
     ros::NodeHandle n;
-
     ros::ServiceServer service = n.advertiseService("seeker", function_seeker);
     ros::spin();
 
