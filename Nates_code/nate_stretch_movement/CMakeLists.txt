@@ -150,6 +150,7 @@ add_executable(wall_tf_publisher_node src/wall_tf_publisher.cpp)
 add_executable(wall_tf_listener_node src/wall_tf_listener.cpp)
 add_executable(wall_follower_node src/wall_follower.cpp)
 add_executable(turn_left_90_node src/turn_left_90.cpp)
+add_executable(robot_driver_node src/robot_driver.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -166,6 +167,7 @@ add_dependencies(wall_tf_publisher_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${ca
 add_dependencies(wall_tf_listener_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(wall_follower_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(turn_left_90_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(robot_driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_avoidance_node
@@ -187,6 +189,9 @@ target_link_libraries(wall_follower_node
    ${catkin_LIBRARIES}
 )
 target_link_libraries(turn_left_90_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(robot_driver_node
    ${catkin_LIBRARIES}
 )
 

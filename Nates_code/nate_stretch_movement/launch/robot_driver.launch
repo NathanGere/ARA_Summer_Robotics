@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="nate_stretch_movement" type="robot_driver_node" name="Robot_Driver_Node" output="screen"/>
+</launch>
