@@ -8,7 +8,7 @@ from sensor_msgs.msg import LaserScan #needed for lidar
 from collision_prevention_pkg.srv import * #includes service
 
 def driver_callback(data):
-    movement = Twist()
+    movement = Twist() #initializes the variable movement to allow for Twist commands 
     movement.linear.x = 1
     pub.publish(movement)
     #previous rows are just for testing. Add in your own code
@@ -29,11 +29,11 @@ def driver_callback(data):
 
 if __name__ == '__main__':
     
-    rospy.init_node('collision_node',anonymous=True)
-    print("new scan")
-    sub = rospy.Subscriber('/scan', LaserScan, driver_callback) #subscribes to lidar values
-    pub = rospy.Publisher('/stretch_diff_drive_controller/cmd_vel', Twist, queue_size=10) #publishes to stretch base
-    #both sub and pub are set up for gazebo
-    
+    laser_scan_topic = rospy.get_param("laser_scan_param") # default is for gazebo
+    base_cmd_vel_topic = rospy.get_param("base_cmd_vel_param")
 
-    rospy.spin()
+    rospy.init_node('collision_node',anonymous=True)
+    sub = rospy.Subscriber(laser_scan_topic, LaserScan, driver_callback) #subscribes to lidar values
+    pub = rospy.Publisher(base_cmd_vel_topic, Twist, queue_size=10) #publishes to stretch base
+ 
+    rospy.spin() #This is needed
