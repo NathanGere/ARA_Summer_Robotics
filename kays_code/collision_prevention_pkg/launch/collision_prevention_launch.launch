@@ -1,0 +1,7 @@
+<launch>
+
+<node pkg="collision_prevention_pkg" type="prevention_client_shell.py" name="prevention_client_shell_node" output="screen" />
+
+<node pkg="collision_prevention_pkg" type="prevention_server.py" name="prevention_server_node" output="screen" />
+
+</launch>
