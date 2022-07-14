@@ -1,9 +1,11 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Twist.h>
-//#include <Nate_stretch_pcl_n_lidar/laser_scan.h> //service that calls laser scan values
+#include <tf/transform_listener.h>
+//#include "nate_stretch_movement/robot_driver.h"
+//#include <pcl_n_lidar/laser_scan.h> //service that calls laser scan values
 
-//global publisher, subscriber, and client
+//global publisher, subscriber, and tf listener
 ros::Publisher pub;
 ros::Subscriber sub;
 //ros::ServiceClient client;
@@ -30,7 +32,11 @@ int alignment_tracker; //keeps track of consecutive callings of aligner method
 //methods
 void turn_left_60_and_move();
 void turn_left_90_and_move();
+void turn_left_135_and_move();
 void turn_left_180_and_move();
+void turn_right_move();
+bool driveForwardOdom(double distance, bool left);
+bool turnOdom(bool clockwise, double radians);
 
 //will have the robot move around until it finds a wall
 void explorer(const sensor_msgs::LaserScan::ConstPtr &scan)
@@ -90,6 +96,8 @@ void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
 {
     //msg to be published to cmd_vel
     geometry_msgs::Twist motorizer;
+
+    ROS_INFO("Recovering crash . . . ");
 
     //setting up switch statement
     int back = 0;
@@ -285,6 +293,7 @@ void var_set_up(const sensor_msgs::LaserScan::ConstPtr &scan)
     //tracker for nearby walls
     bool walls_nearby = false;
     //The following loop with iterate through the entire array of laser scans to find the index of the nearest wall and the wall's distance
+
     while (i < size)
     {
         if(scan->ranges[i] < scan->ranges[index_mem])
@@ -311,12 +320,6 @@ void var_set_up(const sensor_msgs::LaserScan::ConstPtr &scan)
         lost = true;
     }
 
-    //will activate crash recovery method
-    if(back < 0.3 || front < 0.1 || right < 0.17 || left < 0.17)
-    {
-        crashed = true;
-    }
-
     //uses variables from loop to determine alignment
     if(scan->ranges[820] < distance_mem + 0.1 && scan->ranges[820] > distance_mem - 0.1)
     {
@@ -325,16 +328,6 @@ void var_set_up(const sensor_msgs::LaserScan::ConstPtr &scan)
     else
     {
         aligned = false;
-    }
-
-    //uses scan values to determine if there is space for the robot to move forward
-    if(scan->ranges[1360] > 1.0)
-    {
-        space_to_move = true;
-    }
-    else
-    {
-        space_to_move = false;
     }
 
     //reset alignment_tracker
@@ -390,6 +383,8 @@ void turn_left(const sensor_msgs::LaserScan::ConstPtr &scan)
 
     //everything will need to be reoriented after turning
     needs_setup = true;
+    aligned = false;
+    space_to_move = false;
 
     //number of indices in laser scan array
     int size = scan->ranges.size();
@@ -404,181 +399,156 @@ void turn_left(const sensor_msgs::LaserScan::ConstPtr &scan)
     float left = scan->ranges[1890];
     float back_left = scan->ranges[40];
 
-    //object conditions to track if objects are nearby on the left side
-    int fl = 0;
-    int l = 0;
-    int bl = 0;
+    if(front > 1.0 && right > 1.0)
+    {
+        turn_right_move();
+    }
+    else
+    {
+        //object conditions to track if objects are nearby on the left side
+        int fl = 0;
+        int l = 0;
+        int bl = 0;
 
-    //setting up conditions for switch statement to choose how to turn
-    if(back_left < 1.5)
-    {
-        bl = 1;
-    }
-    if(left < 1)
-    {
-        l = 2;
-    }
-    if(front_left < 1.5)
-    {
-        fl = 4;
-    }
+        //setting up conditions for switch statement to choose how to turn
+        if(back_left < 1.5)
+        {
+            bl = 1;
+        }
+        if(left < 1)
+        {
+            l = 2;
+        }
+        if(front_left < 1.5)
+        {
+            fl = 4;
+        }
 
-    int total = bl + l + fl;
-    switch(total)
-    {      
-        //there are no objects anywhere on the left
-        case 0:
-            turn_left_60_and_move();
-            break;
-        //theres an object on the back left
-        case 1:
-            turn_left_60_and_move();
-            break;
-        //theres an object directly left
-        case 2:
-            turn_left_180_and_move();
-            break;
-        //thers an object left and back left
-        case 3:
-            turn_left_180_and_move();
-            break;
-        //theres an object on the front left
-        case 4:
-            turn_left_180_and_move();
-            break;
-        //theres objects front left and back left, but not left
-        case 5:
-            turn_left_90_and_move();
-            break;
-        //theres objects left and front left
-        case 6:
-            turn_left_180_and_move();
-            break;
-        //theres objects all over the left side
-        case 7:
-            turn_left_180_and_move();
-            break;
+        int total = bl + l + fl;
+        switch(total)
+        {      
+            //there are no objects anywhere on the left
+            case 0:
+                ROS_INFO("Nothing on my left");
+                turn_left_60_and_move();
+                break;
+            //theres an object on the back left
+            case 1:
+                ROS_INFO("Object detected back left");
+                turn_left_60_and_move();
+                break;
+            //theres an object directly left
+            case 2:
+                ROS_INFO("Object detected directly left");
+                turn_left_180_and_move();
+                break;
+            //thers an object left and back left
+            case 3:
+                ROS_INFO("Object detected directly left and back left");
+                turn_left_180_and_move();
+                break;
+            //theres an object on the front left
+            case 4:
+                ROS_INFO("Object detected front left");
+                turn_left_135_and_move();
+                break;
+            //theres objects front left and back left, but not left
+            case 5:
+                ROS_INFO("Object detected front left and back left, but not directly left");
+                turn_left_90_and_move();
+                break;
+            //theres objects left and front left
+            case 6:
+                ROS_INFO("Object detected front left and directly left");
+                turn_left_180_and_move();
+                break;
+            //theres objects all over the left side
+            case 7:
+                ROS_INFO("Objects detected everywhere left");
+                turn_left_180_and_move();
+                break;
+        }
     }
 }
 void turn_left_60_and_move()
 {
-    //msg to be published to cmd_vel
-    geometry_msgs::Twist motorizer;
-
-    //length of turning time in hz
-    ros::Rate turn_time(1.0);
-
-    //publishing turning speed
-    motorizer.angular.z = 1.0;
-    pub.publish(motorizer);
+    bool clockwise = false;
+    double radians = 0.8;
     ROS_INFO("Turning left 60");
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping turning
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-    ROS_INFO("Turning complete");
-
-    //moving forward
-    motorizer.linear.x = 0.7;
-    pub.publish(motorizer);
-    ROS_INFO("Adjusting");
-    turn_time.sleep();
-    motorizer.linear.x = 0.0;
-    pub.publish(motorizer);
+    if(turnOdom(clockwise, radians))
+    {
+        double distance = 0.5;
+        bool left = true;
+        if(!driveForwardOdom(distance, left))
+        {
+            ROS_ERROR("Failed to move forward.");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Failed to turn, trying again");
+        turn_left_60_and_move();
+    }
 }
 void turn_left_90_and_move()
 {   
-    //msg to be published to cmd_vel
-    geometry_msgs::Twist motorizer;
-
-    //length of turning time in hz
-    ros::Rate turn_time(1.0);
-
-    //publishing turning speed
-    motorizer.angular.z = 1.0;
-    pub.publish(motorizer);
+    bool clockwise = false;
+    double radians = 1.2;
     ROS_INFO("Turning left 90");
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping turning
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-
-    //publishing turning speed
-    motorizer.angular.z = 1.0;
-    pub.publish(motorizer);
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping turning
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-    ROS_INFO("Turning complete");
-
-    //moving forward
-    motorizer.linear.x = 1.0;
-    pub.publish(motorizer);
-    ROS_INFO("Adjusting");
-    turn_time.sleep();
-    motorizer.linear.x = 0.0;
-    pub.publish(motorizer);
+    if(turnOdom(clockwise, radians))
+    {
+        double distance = 0.5;
+        bool left = true;
+        if(!driveForwardOdom(distance, left))
+        {
+            ROS_ERROR("Failed to move forward.");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Failed to turn, trying again");
+        turn_left_90_and_move();
+    }
+}
+void turn_left_135_and_move()
+{   
+    bool clockwise = false;
+    double radians = 2.0;
+    ROS_INFO("Turning left 135");
+    if(turnOdom(clockwise, radians))
+    {
+        double distance = 0.5;
+        bool left = true;
+        if(!driveForwardOdom(distance, left))
+        {
+            ROS_ERROR("Failed to move forward.");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Failed to turn, trying again");
+        turn_left_135_and_move();
+    }
 }
 void turn_left_180_and_move()
 {   
-    //msg to be published to cmd_vel
-    geometry_msgs::Twist motorizer;
-
-    //length of turning time in hz
-    ros::Rate turn_time(1.0);
-
-    //publishing turning speed
-    motorizer.angular.z = 1.0;
-    pub.publish(motorizer);
+    bool clockwise = false;
+    double radians = 2.8;
     ROS_INFO("Turning left 180");
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping turning
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-
-    //publishing turning speed
-    motorizer.angular.z = 1.0;
-    pub.publish(motorizer);
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping turning
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-
-    //publishing turning speed
-    motorizer.angular.z = 1.0;
-    pub.publish(motorizer);
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping turning
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-    ROS_INFO("Turning complete");
-
-    //moving forward
-    motorizer.linear.x = 1.0;
-    pub.publish(motorizer);
-    ROS_INFO("Adjusting");
-    turn_time.sleep();
-    motorizer.linear.x = 0.0;
-    pub.publish(motorizer);
+    if(turnOdom(clockwise, radians))
+    {
+        double distance = 0.5;
+        bool left = true;
+        if(!driveForwardOdom(distance, left))
+        {
+            ROS_ERROR("Failed to move forward.");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Failed to turn, trying again");
+        turn_left_180_and_move();
+    }
 }
 void turn_left_move()
 {   
@@ -607,27 +577,23 @@ void turn_left_move()
 //will turn the robot to its right 45 degrees
 void turn_right_move()
 {   
-    geometry_msgs::Twist motorizer;
-
-    //length of turning time in hz
-    ros::Rate turn_time(0.5);
-
-    //publishing turning speed
-    motorizer.angular.z = -1.0;
-    motorizer.angular.x = 1.0;
-    pub.publish(motorizer);
-    ROS_INFO("Turning right");
-
-    //pause before stopping
-    turn_time.sleep();
-
-    //stopping robot
-    motorizer.angular.z = 0.0;
-    pub.publish(motorizer);
-    ROS_INFO("Turning complete");
-
-    //global variables are no longer accurate
-    needs_setup = true;
+    bool clockwise = true;
+    double radians = 0.8;
+    ROS_INFO("Turning right 60");
+    if(turnOdom(clockwise, radians))
+    {
+        double distance = 0.5;
+        bool left = false;
+        if(!driveForwardOdom(distance, left))
+        {
+            ROS_ERROR("Failed to move forward.");
+        }
+    }
+    else
+    {
+        ROS_ERROR("Failed to turn, trying again");
+        turn_right_move();
+    }
 }
 //will move the robot forward
 void move_forward(const sensor_msgs::LaserScan::ConstPtr &scan)
@@ -665,17 +631,45 @@ void move_forward(const sensor_msgs::LaserScan::ConstPtr &scan)
     }
     else
     {
-        turn_left(scan);
-        needs_setup = true;
+        space_to_move = false;
     }
 }
 //decides which of the above methods to call
 void decider(const sensor_msgs::LaserScan::ConstPtr &scan)
 {   
+    //floats will store the distance to nearest object at cherrypicked indices
+    float back = scan->ranges[300];
+    float back_right = scan->ranges[565];
+    float right = scan->ranges[820];
+    float front_right = scan->ranges[1085];
+    float front = scan->ranges[1360];
+    float front_left = scan->ranges[1620];
+    float left = scan->ranges[1890];
+    float back_left = scan->ranges[40];
+    
+    //setting space_to_move condition
+    if(front_right > 0.4 && front > 1.0 && front_left > 0.4)
+    {
+        space_to_move = true;
+    } 
+    else
+    {
+        space_to_move = false;
+    }
+
+    if(back < 0.3 || front < 0.1 || right < 0.17 || left < 0.17)
+    {
+        crashed = true;
+    }
+
     //will call lost method if no walls are nearby
     if(lost)
     {
         explorer(scan);
+    }
+    else if(crashed)
+    {
+        crash_recovery(scan);
     }
     else
     {
@@ -686,7 +680,7 @@ void decider(const sensor_msgs::LaserScan::ConstPtr &scan)
         }
         else if(!initial_distance)
         {
-        initial_distance_setup(scan);
+            initial_distance_setup(scan);
         }
         else if(!first_alignment)
         {
@@ -699,9 +693,8 @@ void decider(const sensor_msgs::LaserScan::ConstPtr &scan)
             {
                 var_set_up(scan);
             }
-
             //choosing action to take
-            if(aligned)
+            else if(aligned)
             {   
                 if(space_to_move)
                 {
@@ -710,6 +703,7 @@ void decider(const sensor_msgs::LaserScan::ConstPtr &scan)
                 else
                 {
                     turn_left(scan);
+                    needs_setup = true;
                 }
             }
             else
@@ -756,3 +750,106 @@ int main(int argc, char** argv)
     
     return 0;
 }
+bool driveForwardOdom(double distance, bool left)
+{   
+    tf::TransformListener listener;
+    //wait for listener to get first message
+    listener.waitForTransform("base_link", "odom", ros::Time(0), ros::Duration(1.0));
+
+    //record transforms
+    tf::StampedTransform start_transform;
+    tf::StampedTransform current_transform;
+
+    //record the starting transfrom from the odometry to base frame
+    listener.lookupTransform("base_link", "odom", ros::Time(0), start_transform);
+
+    geometry_msgs::Twist base_cmd;
+    base_cmd.linear.y = base_cmd.angular.z = 0;
+    base_cmd.linear.x = 0.25;
+
+    if(left)
+    {
+        base_cmd.angular.z = -0.1;
+    }
+    else
+    {
+        base_cmd.angular.z = 0.1;
+    }
+
+    ros::Rate rate(10.0);
+    bool done = false;
+    while(!done && ros::ok())
+    {
+        pub.publish(base_cmd);
+        rate.sleep();
+        //get current transform
+        try
+        {
+            listener.lookupTransform("base_link", "odom", ros::Time(0), current_transform);
+        }
+        catch(tf::TransformException ex)
+        {
+            ROS_ERROR("%s", ex.what());
+            break;
+        }
+        //see distance traveled
+        tf::Transform relative_transform = start_transform.inverse() * current_transform;
+        double dist_moved = relative_transform.getOrigin().length();
+        if(dist_moved > distance) done = true; 
+    }
+    if (done) return true;
+    return true;
+}
+//method for turning robot a specified amt 
+bool turnOdom(bool clockwise, double radians)
+{   
+    while(radians < 0) radians += 2*M_PI;
+    while(radians > 2*M_PI) radians -= 2*M_PI;
+
+    tf::TransformListener listener;
+    //wait for listener to get first message
+    listener.waitForTransform("base_link", "odom", ros::Time(0), ros::Duration(1.0));
+
+    //record transforms
+    tf::StampedTransform start_transform;
+    tf::StampedTransform current_transform;
+
+    //record the starting transfrom from the odometry to base frame
+    listener.lookupTransform("base_link", "odom", ros::Time(0), start_transform);
+
+    geometry_msgs::Twist base_cmd;
+    base_cmd.linear.y = base_cmd.linear.x = 0;
+    base_cmd.angular.z = 0.75;
+
+    if(clockwise) base_cmd.angular.z = -base_cmd.angular.z;
+
+    //the axis we want to be rotating by
+    tf::Vector3 desired_turn_axis(0, 0, 1);
+    if(!clockwise) desired_turn_axis = -desired_turn_axis;
+
+    ros::Rate rate(10.0);
+    bool done = false;
+    while(!done && ros::ok())
+    {
+        pub.publish(base_cmd);
+        rate.sleep();
+        //get current transform
+        try
+        {
+            listener.lookupTransform("base_link", "odom", ros::Time(0), current_transform);
+        }
+        catch(tf::TransformException ex)
+        {
+            ROS_ERROR("%s", ex.what());
+            break;
+        }
+        tf::Transform relative_transform = start_transform.inverse() * current_transform;
+        tf::Vector3 actual_turn_axis = relative_transform.getRotation().getAxis();
+        double angle_turned = relative_transform.getRotation().getAngle();
+        if( fabs(angle_turned) < 1.0e-2) continue;
+        if( actual_turn_axis.dot( desired_turn_axis ) < 0 ) angle_turned = 2 * M_PI - angle_turned;
+        if(angle_turned > radians) done = true;
+    }
+    if(done) return true;
+    return true;
+} 

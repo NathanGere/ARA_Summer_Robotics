@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <Nate_stretch_pcl_n_lidar/laser_scan.h>
+#include <pcl_n_lidar/laser_scan.h>
 #include <sensor_msgs/LaserScan.h>
 
 std::string laser_scan;
@@ -7,7 +7,7 @@ ros::ServiceClient client;
 
 void caller_cb(const sensor_msgs::LaserScan::ConstPtr &scan)
 {
-    Nate_stretch_pcl_n_lidar::laser_scan srv;
+    pcl_n_lidar::laser_scan srv;
 
     srv.request.header.seq = scan->header.seq;
     srv.request.header.stamp = scan->header.stamp;
@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 
     n.param<std::string>("laser_scan", laser_scan, "/scan");
 
-    client = n.serviceClient<Nate_stretch_pcl_n_lidar::laser_scan>("lidar_values");
+    client = n.serviceClient<pcl_n_lidar::laser_scan>("lidar_values");
     ros::Subscriber sub = n.subscribe(laser_scan, 1000, caller_cb);
 
     ros::spin();

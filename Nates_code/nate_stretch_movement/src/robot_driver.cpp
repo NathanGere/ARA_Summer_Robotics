@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
 #include <tf/transform_listener.h>
+//#include "nate_stretch_movement/robot_driver.h"
 
 class RobotDriver
 {
@@ -23,7 +24,7 @@ class RobotDriver
     {
         std::cout << "Type a command and then press enter.  "
         "Use 'w' to move forward, 'a' to turn left, "
-        "'d' to turn right, and 'x' to exit.\n";
+        "'d' to turn right, and '.' to exit.\n";
 
         //msg to be published to cmd_vel
         geometry_msgs::Twist base_cmd;
@@ -32,7 +33,7 @@ class RobotDriver
         while(n_.ok())
         {
             std::cin.getline(cmd, 50);
-            if(cmd[0] != 'w' && cmd[0] != 'd' && cmd[0] != 'x' && cmd[0] != 'a')
+            if(cmd[0] != 'w' && cmd[0] != 'd' && cmd[0] != '.' && cmd[0] != 'a')
             {
                 std::cout << "unknown command:" << cmd << "\n";
                 continue;
@@ -58,8 +59,10 @@ class RobotDriver
                 base_cmd.angular.z = -0.75;
                 base_cmd.linear.x = 0.25;
             }
-            else if(cmd[0] = 'x')
+            else if(cmd[0] = '.')
             {   
+                base_cmd.angular.z = 0.0;
+                base_cmd.linear.x = 0.0;
                 break;
             }
 
@@ -71,14 +74,14 @@ class RobotDriver
     bool driveForwardOdom(double distance)
     {
         //wait for listener to get first message
-        listener_.waitForTransform("base_footprint", "odom_combined", ros::Time(0), ros::Duration(1.0));
+        listener_.waitForTransform("base_link", "odom", ros::Time(0), ros::Duration(1.0));
 
         //record transforms
         tf::StampedTransform start_transform;
         tf::StampedTransform current_transform;
 
         //record the starting transfrom from the odometry to base frame
-        listener_.lookupTransform("base_footprint", "odom_combined", ros::Time(0), start_transform);
+        listener_.lookupTransform("base_link", "odom", ros::Time(0), start_transform);
 
         geometry_msgs::Twist base_cmd;
         base_cmd.linear.y = base_cmd.angular.z = 0;
@@ -89,11 +92,11 @@ class RobotDriver
         while(!done && n_.ok())
         {
             cmd_vel_pub.publish(base_cmd);
-            rate_sleep();
+            rate.sleep();
             //get current transform
             try
             {
-                listener_.lookupTransform("base_footprint", "odom_combined", ros::Time(0), current_transform);
+                listener_.lookupTransform("base_link", "odom", ros::Time(0), current_transform);
             }
             catch(tf::TransformException ex)
             {
@@ -114,14 +117,14 @@ class RobotDriver
         while(radians > 2*M_PI) radians -= 2*M_PI;
 
         //wait for listener to get first message
-        listener_.waitForTransform("base_footprint", "odom_combined", ros::Time(0), ros::Duration(1.0));
+        listener_.waitForTransform("base_link", "odom", ros::Time(0), ros::Duration(1.0));
 
         //record transforms
         tf::StampedTransform start_transform;
         tf::StampedTransform current_transform;
 
         //record the starting transfrom from the odometry to base frame
-        listener_.lookupTransform("base_footprint", "odom_combined", ros::Time(0), start_transform);
+        listener_.lookupTransform("base_link", "odom", ros::Time(0), start_transform);
 
         geometry_msgs::Twist base_cmd;
         base_cmd.linear.y = base_cmd.linear.x = 0;
@@ -138,11 +141,11 @@ class RobotDriver
         while(!done && n_.ok())
         {
             cmd_vel_pub.publish(base_cmd);
-            rate_sleep();
+            rate.sleep();
             //get current transform
             try
             {
-                listener_.lookupTransform("base_footprint", "odom_combined", ros::Time(0), current_transform);
+                listener_.lookupTransform("base_link", "odom", ros::Time(0), current_transform);
             }
             catch(tf::TransformException ex)
             {
@@ -168,6 +171,9 @@ int main(int argc, char** argv)
     ros::NodeHandle n;
 
     RobotDriver driver(n);
-    driver.driverKeyboard();
+    //driver.driverKeyboard();
     //driver.driveForwardOdom(0.5);
+    bool clockwise = true;
+    double radians = 1.2;
+    driver.turnOdom(clockwise, radians);
 }

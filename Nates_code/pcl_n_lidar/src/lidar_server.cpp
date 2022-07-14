@@ -1,7 +1,7 @@
 #include <ros/ros.h>
-#include <Nate_stretch_pcl_n_lidar/laser_scan.h>
+#include <pcl_n_lidar/laser_scan.h>
 
-bool retriever(Nate_stretch_pcl_n_lidar::laser_scan::Request &req, Nate_stretch_pcl_n_lidar::laser_scan::Response &res)
+bool retriever(pcl_n_lidar::laser_scan::Request &req, pcl_n_lidar::laser_scan::Response &res)
 {
     //given the laser scan from "/scan" from the client, it will assign the same values to the service's response
     res.header.seq = req.header.seq;
