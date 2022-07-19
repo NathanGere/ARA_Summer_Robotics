@@ -4,12 +4,16 @@
     <arg name="laser_topic" default="/scan" />
 
     <node pkg="collision_prevention_pkg" type="prevention_client_shell.py" name="prevention_client_shell_node" output="screen">
-    <param name="laser_scan_param" type="str" value="$(arg laser_topic)" />
-    <param name="base_cmd_vel_param" type="str" value="$(arg twist_topic)" />
+    
+    <remap from="/laser_scan" to="$(arg laser_topic)" />
+    <remap from="/cmd_vel" to="$(arg twist_topic)" />
+    
     </node>
 
     <node pkg="collision_prevention_pkg" type="prevention_server.py" name="prevention_server_node" output="screen">
-    <param name="base_cmd_vel_param" type="str" value="$(arg twist_topic)" />
+    
+    <remap from="/cmd_vel" to="$(arg twist_topic)" />
+    
     </node>
 
 </launch>

@@ -1,10 +1,14 @@
 # Kay's Code
 ## Overview
-The objective Kay was trying to reach was to create code that would cause the robot to not
-collide into obstacles using the lidar and the camera on the stretch robot.
+The objective Kay was trying to reach was to create code that would cause the robot to not collide into obstacles using the lidar on the stretch robot.
+
+There will also be a text file including all work done with the echo dot.
 
 ## collision_prevention_pkg
-This package is currently able avoid obsticals using the lidar of the stretch robot. The python
-files in the package were created so that they can be easily changed based on the needs of those
-using it. Also all of the topics used are for stretch robot in gazebo and need to be changed
-if used for the physical robot.
+This package is currently able avoid obsticals using the lidar of the stretch robot. 
+
+There is a python shell file for a client and a server that can be adjusted based on the application.
+
+Using the current server the teleop twist python file provided by hello_robot was adjusted to help with collision prevention.
+
+All default topics are for stretch robot in gazebo!

@@ -1,2 +1,0 @@
-laser_scan_param: '/scan'
-base_cmd_vel_param: '/stretch_diff_drive_controller/cmd_vel'
