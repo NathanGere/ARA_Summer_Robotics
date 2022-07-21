@@ -1,22 +1,23 @@
 #!/usr/bin/env python
-from numpy import empty
 import rospy
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.srv import GetMap, GetMapRequest, GetMapResponse
 
-
+# Global Variables for empty, occupied, and unknown values
+unknown     =   int(-1)
+empty       =   int(0)
+occupied    =   int(100)
 
 class gmap:
 
     def __init__(self, get_map_topic_name, map_service):
         self.map = OccupancyGrid()
-        self.wall_gap_x  = 0
-        self.wal_gap_y   = 0
+        self.wall_gaps = []
         self.get_map_topic_name = get_map_topic_name
         self.get_map_service    = map_service
 
-    def map_is_enclosed(self, print_data, print_process, print_final_map):
-        part_one_map = self.map_is_enclosed_initial(print_data)
+    def map_is_enclosed(self, print_process, print_final_map):
+        part_one_map = self.map_is_enclosed_initial()
 
         # Optional printing to showcase the process
         if print_process:
@@ -24,60 +25,83 @@ class gmap:
 
         return self.map_is_enclosed_advanced(part_one_map, print_process, print_final_map)
 
-    def map_is_enclosed_initial(self, print_data): 
+    def map_is_enclosed_initial(self): 
         # Make a shallow copy of our map 
         map = []
         for index in self.map.data:
             map.append(index)
         height = self.map.info.height 
         width = self.map.info.width
-        # Initial Number of Zeros Check
-        if print_data:
-            print("Initial Count:\tZeros Unchecked = {}.".format(map.count(0)))
+        # Possible gaps array holds the index of gaps in the wall
+        possible_gaps = []
+        have_seen_a_empty = False
+        # to become unkown array holds the indexs to fill as unknown
+        fill_unknown = []
 
         # Left-Right Scan
         for rows in range(width):
+            have_seen_a_empty = False
             for digit in range(height):
                 index = rows*height + digit
-                if map[index] != 100:
-                    map[index] = -1
+                if map[index] != occupied:
+                    if map[index] == empty and not have_seen_a_empty:
+                        have_seen_a_empty = True
+                        possible_gaps.append(index)
+                    else:
+                        fill_unknown.append(index)
                 else:
                     break
-        if print_data:
-            print("After Left-Right Scan:\tZeros Unchecked = {}.".format(map.count(0)))
+       
 
         # Right-Left Scan
         for rows in range(width):
+            have_seen_a_empty = False
             for digit in range(height):
                 index = height - (rows*height + digit)
-                if map[index] != 100:
-                    map[index] = -1
+                if map[index] != occupied:
+                    if map[index] == empty and not have_seen_a_empty:
+                        have_seen_a_empty = True
+                        possible_gaps.append(width*height + index)
+                    else:
+                        fill_unknown.append(index)
                 else:
                     break
-        if print_data:
-            print("After Right-Left Scan:\tZeros Unchecked = {}.".format(map.count(0)))
+    
 
         # Top-Bottom Scan
         for columns in range(height):
+            have_seen_a_empty = False
             for digit in range(width):
                 index = columns + (digit*height)
-                if map[index] != 100:
-                    map[index] = -1
+                if map[index] != occupied:
+                    if map[index] == empty and not have_seen_a_empty:
+                        have_seen_a_empty = True
+                        possible_gaps.append(index)
+                    else:
+                        fill_unknown.append(index)
                 else:
                     break
-        if print_data:
-            print("After Top-Bottom Scan:\tZeros Unchecked = {}.".format(map.count(0)))
+    
 
         # Bottom-Up Scan
         for columns in range(height):
+            have_seen_a_empty = False
             for digit in range(width):
                 index = width - (columns + (digit*height))
-                if map[index] != 100:
-                    map[index] = -1
+                if map[index] != occupied:
+                    if map[index] == empty and not have_seen_a_empty:
+                        have_seen_a_empty = True
+                        possible_gaps.append(width*height + index)
+                    else:
+                        fill_unknown.append(index)
                 else:
                     break
-        if print_data:
-            print("After Bottom-Up Scan:\tZeros Unchecked = {}.".format(map.count(0)))
+     
+        # Add the unknowns to the map
+        for index in fill_unknown:
+            map[index] = unknown
+        # Add the possible gaps
+        self.wall_gaps = possible_gaps
         return (map)
 
     def map_is_enclosed_advanced(self, map, print_process, print_final_map):
@@ -89,27 +113,27 @@ class gmap:
         last_index = height * width
 
         while True:
-            seen_a_zero = False
-            zero_touches_a_unknown = False
-            # go through the data and check to see if any zero touches a -1 or the edge of the map
+            seen_an_empty = False
+            empty_touches_an_unknown = False
+            # go through the data and check to see if any empty touches an unknown or the edge of the map
             for index in range(last_index):
-                if map[index] == 0:
+                if map[index] == empty:
                     # Although calculating the surrounding indexes would normally reach out of bounds,
-                    # the map_is_enclsed_initial function ensures that there are no zeros on the edges
-                    seen_a_zero = True
+                    # the map_is_enclosed_initial function ensures that there are no empties on the edges
+                    seen_an_empty = True
                     index_right = index + 1
                     index_left  = index -1
                     index_below = index + height
                     index_above = index - height
-                    # if 0 touches a -1 then turn it into a -1
-                    if map[index_above] == -1 or map[index_below] == -1 or map[index_left]  == -1 or map[index_right] == -1:
-                        zero_touches_a_unknown = True
-                        map[index] = -1
+                    # if an empty touches an unknown then turn it into an unknown
+                    if map[index_above] == unknown or map[index_below] == unknown or map[index_left]  == unknown or map[index_right] == unknown:
+                        empty_touches_an_unknown = True
+                        map[index] = unknown
       
-            if not zero_touches_a_unknown:
+            if not empty_touches_an_unknown:
                 if print_final_map:
                     self.print_map_terminal(map)
-                if seen_a_zero:
+                if seen_an_empty:
                     break  # Time to run Edge cases
                 else:
                     return False
@@ -128,10 +152,10 @@ class gmap:
         # as there is no way that the robot is in that enclosure
         index = 0
         for points in map:
-            if points == 0:
+            if points == empty:
                 # Move 4 pixels left and right to see if we are the center of an 11 by 11 square
                 for i in range(-4, 5):
-                    if map[index + i] != 0:
+                    if map[index + i] != empty:
                         return False
             index += 1  
         
@@ -153,12 +177,12 @@ class gmap:
         self.map = result_map
 
     def print_map_grid(self):
-        # Ignores all the -1's
+        # Ignores all the unknowns
         grid = self.map.data
         print(grid)
 
     def crop_map(self, print_meta_data):
-        # Take the full map and crop out the rows and columns that are solely -1's
+        # Take the full map and crop out the rows and columns that are solely unknown
         width  = self.map.info.width
         height = self.map.info.height
         grid = self.map.data
@@ -174,7 +198,7 @@ class gmap:
             for digit in range(width):
                 index = rows*width + digit
                 row_in_question.append(grid[index])
-                if grid[index] != -1:
+                if grid[index] != unknown:
                     row_is_relevant = True
             if row_is_relevant:
                 for index in row_in_question:
@@ -191,7 +215,7 @@ class gmap:
             for digit in range(height):
                 index = columns + (digit*width)
                 column_in_question.append(row_cropped_grid[index])
-                if row_cropped_grid[index] != -1:
+                if row_cropped_grid[index] != unknown:
                     column_is_relevant = True
             if column_is_relevant:
                 for index in column_in_question:
@@ -221,20 +245,20 @@ class gmap:
         height = self.map.info.height
         width  = self.map.info.width
         total  = len(self.map.data)
-        negative_ones = 0
-        zeros = 0
-        hundreds = 0
+        unknown_count = 0
+        empty_count = 0
+        occupied_count = 0
         for value in self.map.data:
-            if value == -1:
-                negative_ones += 1
-            elif value == 0:
-                zeros += 1
-            elif value == 100:
-                hundreds += 1
+            if value == unknown:
+                unknown_count += 1
+            elif value == empty:
+                empty_count += 1
+            elif value == occupied:
+                occupied_count += 1
         # Printing
         print("\n\nMap Info: ")
         print("Height: {}\t Width: {}\t Total Points: {} integers.".format(height, width, total))
-        print("-1's: {}\t 0's: {}\t 100's: {}".format(negative_ones, zeros, hundreds))
+        print("Unknown: {}\t Empty: {}\t Occupied: {}".format(unknown_count, empty_count, occupied_count))
    
     def print_map_terminal(self, map):
         width = self.map.info.width
@@ -243,14 +267,17 @@ class gmap:
         unknown_ch = ' '
         wall_ch    = '#'
         empty_ch   = '.'
+        gap_ch     = '0'
         for row in range(width):
             for digit in range(height):
                 index = row * height + digit
-                if map[index] == 100:
+                if self.wall_gaps.count(index):
+                    map_to_print_string += gap_ch
+                elif map[index] == occupied:
                     map_to_print_string += wall_ch
-                elif map[index] == 0:
+                elif map[index] == empty:
                     map_to_print_string += empty_ch
-                elif map[index] == -1:
+                elif map[index] == unknown:
                     map_to_print_string += unknown_ch
             map_to_print_string += '\n\t'
         print(map_to_print_string)
@@ -269,7 +296,6 @@ if __name__ == "__main__":
     # Params
     get_map_topic_name = str(rospy.get_param("~get_map_topic_name", "/static_map"))                # Topic for GetMap service
     print_crop_data = bool(rospy.get_param("~print_crop_data", True))                              # Topic for Printing Crop Data
-    print_is_enclosed_data = bool(rospy.get_param("~print_is_enclosed_data", True))                # Topic for Printing the enclosed data
     print_is_enclosed_process = bool(rospy.get_param("~print_is_enclosed_process", True))          # Topic for Printing the enclosed process
     print_final_terminal_map = bool(rospy.get_param("~print_final_terminal_map", True))            # Topic for Printing final map in the terminal
 
@@ -283,5 +309,5 @@ if __name__ == "__main__":
     gmap.crop_map(print_crop_data)
     gmap.print_map_terminal(gmap.get_map_data())
 
-    print("\n\nMap_is_Enclosed: {}.".format(gmap.map_is_enclosed(print_is_enclosed_data, print_is_enclosed_process, print_final_terminal_map)))
+    print("\n\nMap_is_Enclosed: {}.".format(gmap.map_is_enclosed( print_is_enclosed_process, print_final_terminal_map)))
     gmap.map_info_no_array()
