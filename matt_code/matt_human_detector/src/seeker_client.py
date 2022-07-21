@@ -5,49 +5,57 @@ import sys
 from std_msgs.msg import Bool
 from matt_human_detector.srv import *
 
-def some_function():
+def client_response():
+    print("Waiting for response from server")
+    print(" ")
     rospy.wait_for_service("seeker")
 
-    print(" ")
-    print("------------------")
-    print("Return to Client")
-    print("------------------")
-    print(" ")
-
     try:
+
         seeker_service_caller = rospy.ServiceProxy("seeker", seeker)
 
-        response = seeker_service_caller
+        response = seeker_service_caller()
 
-        if bool(response) == True:
-            print("Found Human!")
+        print("Response/{} " .format(response))
+
+        if response == True:
+            print("Found person!")
         else: 
-            print("No human found! Try searching again!")
-            sys.exit(1)
+            print("No person found! Try searching again!")
 
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
+        sys.exit(1)
 
-    print(" ")
-    print("------------------")
-    print("End Client")
-    print("------------------")
 
     print(" ")
     print("------------------------------------------------------------------------------------")
 
 
 if __name__ == '__main__':
-    print(" ")
     print("------------------------------------------------------------------------------------")
     print(" ")
-    print("-------------")
-    print("Start Client")
-    print("-------------")
-    print("Move to Server")
-    print("-------------")
+    print("----------------------------")
+    print("Starting search for person!")
+    print("----------------------------")
+    print(" ")
 
+    print("----------------------------")
+    print ("Now in Client Flie")
+    print("----------------------------")
+    print(" ")
+
+    print("Sucessfully made seeker_client node")
+    print(" ")
     rospy.init_node("seeker_client")
-    # publish = rospy.Publisher("camera_publisher", Bool, queue_size = 10)
-    some_function()
+
+    print("----------------------------")
+    print("Reentering Client file")
+    print("----------------------------")
+    print(" ")
+
+    print("Calling client_response function")
+    print(" ")
+    client_response()
+
     rospy.spin()
