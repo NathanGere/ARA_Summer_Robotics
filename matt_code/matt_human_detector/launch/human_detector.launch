@@ -1,0 +1,14 @@
+<launch>
+
+<!-- Launch my python file -->
+<!-- <node pkg="matt_human_detector" type="human_seeker.py" name="Seeker_Node" output="screen" /> -->
+
+<!-- Launch human model detector -->
+<!-- <node pkg="ObjectTracker" type="object_tracker.py" name="Object_Node" output="screen" /> -->
+<!-- <include file="$(find ObjectTracker)/object_tracker.py" /> -->
+
+<node pkg="matt_human_detector" type="seeker_client.py" name="Client_Node" output="screen" />
+
+<node pkg="matt_human_detector" type="seeker_server.py" name="Server_Node" output="screen" />
+
+</launch>
