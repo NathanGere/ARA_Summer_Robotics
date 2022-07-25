@@ -115,7 +115,7 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     float back_right = scan->ranges[565];
     float right = scan->ranges[820];
     float front_right = scan->ranges[1085];
-    float front = scan->ranges[1360];
+    float front = scan->ranges[1361];
     float front_left = scan->ranges[1620];
     float left = scan->ranges[1890];
     float back_left = scan->ranges[40];
@@ -142,6 +142,10 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
         {
             crashed = true;
         }
+        else
+        {
+            crashed = false;
+        }
     
         i++;
     }
@@ -151,10 +155,18 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     {
         lost = true;
     }
+    else
+    {
+        lost = false;
+    }
 
-    if(front > 1.0 && front_left > 0.4 && front_right > 0.4)
+    if(front > 0.7 && scan->ranges[1329] > 0.72 && scan->ranges[1393] > 0.72 && scan->ranges[1297] > 0.76 && scan->ranges[1425] > 0.76)
     {
         space_to_move = true;
+    }
+    else
+    {
+        space_to_move = false;
     }
 
     bool wall_on_right = true;
@@ -163,11 +175,11 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     {
         wall_on_right = true;
     }
-    else if (right > 5.0)
+    else if (right > 1.5)
     {
         wall_on_right = false;
     }
-    else if (right >= distance_mem + 0.1 && right <= 5.0)
+    else if (right >= distance_mem + 0.1 && right <= 1.5)
     {
         too_far_from_right = true;
     }
@@ -249,7 +261,7 @@ void explorer(const sensor_msgs::LaserScan::ConstPtr &scan)
 
     //floats will store the distance to nearest object at cherrypicked indices
     float right = scan->ranges[820];
-    float center = scan->ranges[1360];
+    float center = scan->ranges[1361];
     float left = scan->ranges[1890];
 
     //iteration variable
@@ -301,7 +313,7 @@ void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
         back = 1;
     }
     //will give right a value of 2 if it is right
-    if(300 <= index_mem && index_mem <= 1360)
+    if(300 <= index_mem && index_mem <= 1361)
     {
         right = 2;
     }
@@ -358,7 +370,7 @@ void get_oriented(const sensor_msgs::LaserScan::ConstPtr &scan)
 
     //floats will store the distance to nearest object at cherrypicked indices
     float right = scan->ranges[820];
-    float center = scan->ranges[1360];
+    float center = scan->ranges[1361];
     float left = scan->ranges[1890];
 
     //iteration variable
@@ -405,21 +417,28 @@ void get_closer(const sensor_msgs::LaserScan::ConstPtr &scan)
     geometry_msgs::Twist motorizer;
 
     //float to store distance in front of the object
-    float front = scan->ranges[1360];
+    float front = scan->ranges[1361];
 
+    //once the robot is close enough, it will proceed
+    if(front > 0.55 && front < 0.65)
+    {
+        close_enough = true;
+        ROS_INFO("PREFERED INITIAL DISTANCE ACHIEVED.");
+    } 
     //if there is space, the robot will get closer to the wall
-    if(front > 0.6)
+    else if(front > 0.6)
     {
         motorizer.linear.x = 0.5;
         pub.publish(motorizer);
         ROS_INFO("Establishing initial distance . . .");
     }
-    //once the robot is close enough, it will proceed
+    //if the robot is too close, it will back up
     else
     {
-        close_enough = true;
-        ROS_INFO("PREFERED INITIAL DISTANCE ACHIEVED.");
-    } 
+        motorizer.linear.x = -0.5;
+        pub.publish(motorizer);
+        ROS_INFO("Establishing initial distance . . .");
+    }
 }
 //will turn the robot to its left until its right side is parallel to the nearest wall
 void get_aligned(const sensor_msgs::LaserScan::ConstPtr &scan)
@@ -566,8 +585,9 @@ void turn_left(const sensor_msgs::LaserScan::ConstPtr &scan)
     float back_right = scan->ranges[565];
     float right = scan->ranges[820];
     float front_right = scan->ranges[1085];
-    float front = scan->ranges[1360];
+    float front = scan->ranges[1361];
     float front_left = scan->ranges[1620];
+    float left_top = scan->ranges[1873];
     float left = scan->ranges[1890];
     float back_left = scan->ranges[40];
     
@@ -585,7 +605,7 @@ void turn_left(const sensor_msgs::LaserScan::ConstPtr &scan)
     {
         l = 2;
     }
-    if(front_left < 1.5)
+    if(left_top < 1.1)
     {
         fl = 4;
     }
@@ -642,7 +662,7 @@ void turn_left_60_and_move()
     ROS_INFO("Turning left 60");
     if(turnOdom(clockwise, radians))
     {
-        double distance = 0.5;
+        double distance = 0.1;
         bool left = true;
         if(!driveForwardOdom(distance))
         {
@@ -662,7 +682,7 @@ void turn_left_90_and_move()
     ROS_INFO("Turning left 90");
     if(turnOdom(clockwise, radians))
     {
-        double distance = 0.5;
+        double distance = 0.1;
         bool left = true;
         if(!driveForwardOdom(distance))
         {
@@ -682,7 +702,7 @@ void turn_left_135_and_move()
     ROS_INFO("Turning left 135");
     if(turnOdom(clockwise, radians))
     {
-        double distance = 0.5;
+        double distance = 0.1;
         bool left = true;
         if(!driveForwardOdom(distance))
         {
@@ -702,7 +722,7 @@ void turn_left_180_and_move()
     ROS_INFO("Turning left 180");
     if(turnOdom(clockwise, radians))
     {
-        double distance = 0.5;
+        double distance = 0.1;
         bool left = true;
         if(!driveForwardOdom(distance))
         {
@@ -732,7 +752,7 @@ void turn_right_45_and_move()
     else
     {
         ROS_ERROR("Failed to turn, trying again");
-        turn_left_60_and_move();
+        turn_right_45_and_move();
     }
 }
 void turn_right_90_and_move()
@@ -752,7 +772,7 @@ void turn_right_90_and_move()
     else
     {
         ROS_ERROR("Failed to turn, trying again");
-        turn_left_90_and_move();
+        turn_right_90_and_move();
     }
 }
 void move_forward()
