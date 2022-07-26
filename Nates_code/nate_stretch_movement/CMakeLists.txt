@@ -154,6 +154,8 @@ add_executable(robot_driver_node src/robot_driver.cpp)
 add_executable(rwh_node src/rwh.cpp)
 add_executable(explorer_node src/explorer.cpp)
 add_executable(crash_recovery_node src/crash_recovery.cpp)
+add_executable(wall_identifier_node src/wall_identifier.cpp)
+add_executable(type_of_wall_identifier_node src/type_of_wall_identifier.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -174,6 +176,8 @@ add_dependencies(robot_driver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_
 add_dependencies(rwh_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(explorer_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(crash_recovery_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wall_identifier_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(type_of_wall_identifier_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_avoidance_node
@@ -207,6 +211,12 @@ target_link_libraries(explorer_node
    ${catkin_LIBRARIES}
 )
 target_link_libraries(crash_recovery_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(wall_identifier_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(type_of_wall_identifier_node
    ${catkin_LIBRARIES}
 )
 

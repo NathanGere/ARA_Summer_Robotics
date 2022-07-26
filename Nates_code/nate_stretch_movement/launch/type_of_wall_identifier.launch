@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="nate_stretch_movement" type="type_of_wall_identifier_node" name="Type_Of_Wall_Identifier_Node" output="screen">
+        <rosparam file="$(find nate_stretch_movement)/params/right_wall_hugger_params.yaml" command="load"/>
+    </node>
+</launch>
