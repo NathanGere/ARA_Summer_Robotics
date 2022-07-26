@@ -14,10 +14,9 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "wall_tf_listener_node");
     ros::NodeHandle nh("~");
 
-
+    nh.param<std::string>("laser_frame", laser_frame, "/base_link");
+    nh.param<std::string>("topic_name", topic_name, "/scan");
     nh.param<std::string>("closest_wall_frame", closest_wall_frame, "/nearest_wall");
-    nh.param<std::string>("laser_frame", laser_frame, "/base_laser_link");
-    nh.param<std::string>("topic_name", topic_name, "/robot/base_scan");
     nh.param<std::string>("closest_wall_frame_right", closest_wall_frame_right, "/nearest_wall_right");
     nh.param<std::string>("closest_wall_frame_center", closest_wall_frame_center, "/nearest_wall_center");
     nh.param<std::string>("closest_wall_frame_right", closest_wall_frame_left, "/nearest_wall_left");

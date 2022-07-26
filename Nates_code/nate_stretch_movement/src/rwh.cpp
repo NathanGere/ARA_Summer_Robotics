@@ -46,6 +46,7 @@ void turn_right_90_and_move();
 //moving forward
 void move_forward();
 void move_forward_and_get_closer();
+void move_forward_and_get_farther();
 
 int main(int argc, char** argv)
 {
@@ -171,6 +172,7 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
 
     bool wall_on_right = true;
     bool too_far_from_right = false;
+    bool too_close_to_right = false;
     if(right < distance_mem + 0.1 && right > distance_mem - 0.1)
     {
         wall_on_right = true;
@@ -182,6 +184,10 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     else if (right >= distance_mem + 0.1 && right <= 1.5)
     {
         too_far_from_right = true;
+    }
+    else if (right <= distance_mem - 0.1 && right < 0.2)
+    {
+        too_close_to_right = true;
     }
     else
     {
@@ -224,6 +230,10 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
                 else if(too_far_from_right)
                 {
                     move_forward_and_get_closer();
+                }
+                else if(too_close_to_right)
+                {
+                    move_forward_and_get_farther();
                 }
                 else
                 {
@@ -356,6 +366,7 @@ void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
     //hopefully the robot is no longer stuck, and this will be set to false
     crashed = false;
 }
+//will get the robot to face the nearest wall
 void get_oriented(const sensor_msgs::LaserScan::ConstPtr &scan)
 {   
     //msg to be published to cmd_vel
@@ -399,9 +410,18 @@ void get_oriented(const sensor_msgs::LaserScan::ConstPtr &scan)
     //if its not facing the wall, the robot will turn to its right
     if(!facing)
     {
-        motorizer.angular.z = -0.5;
-        pub.publish(motorizer);
-        ROS_INFO("Orienting . . .");
+        if(index_mem > 300 && index_mem < 1361)
+        {
+            motorizer.angular.z = -0.5;
+            pub.publish(motorizer);
+            ROS_INFO("Orienting . . ."); 
+        }
+        else
+        {
+            motorizer.angular.z = 0.5;
+            pub.publish(motorizer);
+            ROS_INFO("Orienting . . ."); 
+        }
     }
     //if the robot is facing the wall, the orientation is complete
     else
@@ -426,7 +446,7 @@ void get_closer(const sensor_msgs::LaserScan::ConstPtr &scan)
         ROS_INFO("PREFERED INITIAL DISTANCE ACHIEVED.");
     } 
     //if there is space, the robot will get closer to the wall
-    else if(front > 0.6)
+    else if(front > 0.4)
     {
         motorizer.linear.x = 0.5;
         pub.publish(motorizer);
@@ -616,7 +636,7 @@ void turn_left(const sensor_msgs::LaserScan::ConstPtr &scan)
         //there are no objects anywhere on the left
         case 0:
             ROS_INFO("Nothing on my left");
-            turn_left_60_and_move();
+            turn_left_90_and_move();
             break;
         //theres an object on the back left
         case 1:
@@ -682,7 +702,7 @@ void turn_left_90_and_move()
     ROS_INFO("Turning left 90");
     if(turnOdom(clockwise, radians))
     {
-        double distance = 0.1;
+        double distance = 0.3;
         bool left = true;
         if(!driveForwardOdom(distance))
         {
@@ -788,7 +808,16 @@ void move_forward_and_get_closer()
     //msg to be published to cmd_vel
     geometry_msgs::Twist motorizer;
     motorizer.linear.x = 1.0;
-    motorizer.angular.z = -0.15;
+    motorizer.angular.z = -0.2;
     pub.publish(motorizer);
     ROS_INFO("Moving forward and getting closer to wall");
+}
+void move_forward_and_get_farther()
+{   
+    //msg to be published to cmd_vel
+    geometry_msgs::Twist motorizer;
+    motorizer.linear.x = 1.0;
+    motorizer.angular.z = 0.2;
+    pub.publish(motorizer);
+    ROS_INFO("Moving forward and getting farther from wall");
 }
