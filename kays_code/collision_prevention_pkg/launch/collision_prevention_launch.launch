@@ -1,0 +1,19 @@
+<launch>
+
+    <arg name="twist_topic" default="/stretch_diff_drive_controller/cmd_vel" />
+    <arg name="laser_topic" default="/scan" />
+
+    <node pkg="collision_prevention_pkg" type="prevention_client_shell.py" name="prevention_client_shell_node" output="screen">
+    
+    <remap from="/laser_scan" to="$(arg laser_topic)" />
+    <remap from="/cmd_vel" to="$(arg twist_topic)" />
+    
+    </node>
+
+    <node pkg="collision_prevention_pkg" type="prevention_server.py" name="prevention_server_node" output="screen">
+    
+    <remap from="/cmd_vel" to="$(arg twist_topic)" />
+    
+    </node>
+
+</launch>
