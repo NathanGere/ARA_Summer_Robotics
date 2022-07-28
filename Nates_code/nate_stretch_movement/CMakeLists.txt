@@ -164,6 +164,7 @@ add_executable(crash_recovery_v2_node src/crash_recovery_v2.cpp)
 add_executable(wall_avoider_v2_node src/wall_avoider_v2.cpp)
 add_executable(wall_avoider_v3_node src/wall_avoider_v3.cpp)
 add_executable(right_wall_follower_node src/right_wall_follower.cpp)
+add_executable(RobND_wall_follower_node src/RobND_wall_follower.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -194,6 +195,7 @@ add_dependencies(crash_recovery_v2_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${ca
 add_dependencies(wall_avoider_v2_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(wall_avoider_v3_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(right_wall_follower_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(RobND_wall_follower_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_avoidance_node
@@ -257,6 +259,9 @@ target_link_libraries(wall_avoider_v3_node
    ${catkin_LIBRARIES}
 )
 target_link_libraries(right_wall_follower_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(RobND_wall_follower_node
    ${catkin_LIBRARIES}
 )
 

@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="nate_stretch_movement" type="RobND_wall_follower_node" name="RobND_Wall_Follower_Node" output="screen"/>
+</launch>

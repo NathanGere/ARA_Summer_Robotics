@@ -155,37 +155,37 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     i = 0;
     while(i < 47)
     {
-        if(scan->ranges[i] < 0.55) wall_on_left = true;
+        if(scan->ranges[i] < 0.5) wall_on_left = true;
         i++;
     }
 
     i = 880; //' 624 or 824 to 877
     while(i < 890)
     {   
-        if(scan->ranges[i] < 0.55) wall_on_right = true;
+        if(scan->ranges[i] < 0.5) wall_on_right = true;
         i++;
     }
 
     i = 1099;
     while(i < 1639)
     {
-        if(scan->ranges[i] < 0.55) wall_in_front_right = true;
-        if(scan->ranges[i] < 0.55) wall_in_front = true;
+        if(scan->ranges[i] < 0.5) wall_in_front_right = true;
+        if(scan->ranges[i] < 0.5) wall_in_front = true;
         i++;
     }
 
     i = 1639;
     while(i < 1640)
     {
-        if(scan->ranges[i] < 0.55) wall_in_front_left = true;
-        if(scan->ranges[i] < 0.55) wall_in_front = true;
+        if(scan->ranges[i] < 0.5) wall_in_front_left = true;
+        if(scan->ranges[i] < 0.5) wall_in_front = true;
         i++;
     }
 
     i = 1825;
     while(i < 1977)
     {
-        if(scan->ranges[i] < 0.55) wall_on_left = true;
+        if(scan->ranges[i] < 0.5) wall_on_left = true;
         i++;
     }
 
@@ -640,17 +640,8 @@ void right_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan)
             motorizer.angular.z = -0.65;
             break;
         case 2: //wall in front
-            if(!wall_in_front_right)
-            {
-                ROS_INFO("case 2, A");
-                motorizer.angular.z = -0.5;
-            }
-            else
-            {
-                ROS_INFO("case 2, B");
-                motorizer.angular.z = 0.5;
-                break;
-            }
+            ROS_INFO("case 2");
+            motorizer.angular.z = -0.5;
         case 3: //wall in front and on left
             ROS_INFO("case 3");
             motorizer.angular.z = 0.5;
