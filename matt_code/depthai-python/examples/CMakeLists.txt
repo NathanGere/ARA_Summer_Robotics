@@ -162,8 +162,7 @@ add_python_example(spatial_object_tracker ObjectTracker/spatial_object_tracker.p
 # add_python_example(spatial_object_tracker_yolo ObjectTracker/spatial_object_tracker_yolo.py)
 # add_python_example(seeker_server ObjectTracker/seeker_server.py)
 # add_python_example(seeker_client ObjectTracker/seeker_client.py)
-# add_python_example(seeker_return ObjectTracker/seeker_return
-.py)
+add_python_example(seeker_return ObjectTracker/seeker_return.py)
 
 ## Script
 add_python_example(script_camera_control Script/script_camera_control.py)
