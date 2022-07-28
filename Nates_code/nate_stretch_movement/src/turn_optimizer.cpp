@@ -1,0 +1,960 @@
+#include <ros/ros.h>
+#include <sensor_msgs/LaserScan.h>
+#include <geometry_msgs/Twist.h>
+
+//global pub and sub
+ros::Publisher pub;
+ros::Subscriber sub;
+
+//params
+std::string laser_scan;
+std::string cmd_vel_output;
+
+//wall variables
+bool wall_on_left;
+bool wall_on_right;
+bool wall_in_front;
+
+void turn_optimizer(const sensor_msgs::LaserScan::ConstPtr &scan)
+{
+    //number of indices in laser scan array
+    int size = scan->ranges.size();
+
+    //geo msg to be published
+    geometry_msgs::Twist motorizer;
+    
+    //will calculate which sides of the robot there are walls on
+    int i = 0;
+    while(i < 47)
+    {
+        if(scan->ranges[i] < 0.55) wall_on_left = true;
+        i++;
+    }
+
+    i = 824;
+    while(i < 877)
+    {
+        if(scan->ranges[i] < 0.55) wall_on_right = true;
+        i++;
+    }
+
+    i = 1199;
+    while(i < 1540)
+    {
+        if(scan->ranges[i] < 0.55) wall_in_front = true;
+        i++;
+    }
+
+    i = 1825;
+    while(i < 1977)
+    {
+        if(scan->ranges[i] < 0.55) wall_on_left = true;
+        i++;
+    }
+
+    //calculations for switch statement
+    int l = 0;
+    int f = 0;
+    int r = 0;
+    //setting up calculators
+    if(wall_on_left) l = 1;
+    if(wall_in_front) f = 2;
+    if(wall_on_right) r = 4;
+    //var for switch statment
+    int wall_locations = l + f + r;
+
+    switch(wall_locations)
+    {
+        case 0: //no walls
+            ROS_INFO("case 0");
+            motorizer.linear.x = 0.5;
+            motorizer.angular.z = -0.8;
+            break;
+        case 1: //wall on left
+            ROS_INFO("case 1");
+            motorizer.linear.x = 0.5;
+            break;
+        case 2: //wall in front
+            ROS_INFO("case 2");
+            motorizer.angular.z = 0.5;
+            break;
+        case 3: //wall in front and on left
+            ROS_INFO("case 3");
+            motorizer.angular.z = 0.5;
+            break;
+        case 4: //wall on right
+            ROS_INFO("case 4");
+             motorizer.linear.x = 0.5;
+            break;
+        case 5: //wall on left and right
+            ROS_INFO("case 5");
+             motorizer.linear.x = 0.5;
+            break;
+        case 6: //wall front and right
+            ROS_INFO("case 6");
+            motorizer.angular.z = 0.5;
+            break;
+        case 7: //walls front, left, and right
+            ROS_INFO("case 7");
+            motorizer.angular.z = 0.5;
+            break;
+    }
+    wall_on_left = false;
+    wall_on_right = false;
+    wall_in_front = false;
+    pub.publish(motorizer);
+}
+int main(int argc, char** argv)
+{   
+    //node setup
+    ros::init(argc, argv, "turn_optimizer_node");
+    ros::NodeHandle n;
+
+    //setting up parameters
+    //for movement on the actual robot, cmd_vel_output: "/stretch/cmd_vel"
+    n.param<std::string>("cmd_vel_output", cmd_vel_output, "/stretch_diff_drive_controller/cmd_vel");
+    n.param<std::string>("laser_scan", laser_scan, "/scan");
+
+    //setting up publisher
+    pub = n.advertise<geometry_msgs::Twist>(cmd_vel_output, 1000);
+
+    //variables start as false
+    wall_on_left = false;
+    wall_on_right = false;
+    wall_in_front = false;
+
+    //setting up subscriber
+    sub = n.subscribe<sensor_msgs::LaserScan>(laser_scan, 1000, turn_optimizer);
+
+    ros::Rate loop_rate(10);
+    while(ros::ok())
+    {   
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
+    
+    return 0;
+}
+
+/* PLAN
+
+Since I want to hug walls at 0.4 meters, I will retrieve the indices of objects that are 0.4 meters away on each side
+
+RIGHT SIDE
+[ INFO] [1658944172.457503707, 46.424000000]: Range at scan->ranges[624]: 0.529653
+[ INFO] [1658944172.457510940, 46.424000000]: Range at scan->ranges[625]: 0.529843
+[ INFO] [1658944172.457519586, 46.424000000]: Range at scan->ranges[626]: 0.526803
+[ INFO] [1658944172.457526640, 46.424000000]: Range at scan->ranges[627]: 0.527816
+[ INFO] [1658944172.457533606, 46.424000000]: Range at scan->ranges[628]: 0.525508
+[ INFO] [1658944172.457542343, 46.424000000]: Range at scan->ranges[629]: 0.527047
+[ INFO] [1658944172.457550108, 46.424000000]: Range at scan->ranges[630]: 0.523802
+[ INFO] [1658944172.457558912, 46.424000000]: Range at scan->ranges[631]: 0.523946
+[ INFO] [1658944172.457565992, 46.424000000]: Range at scan->ranges[632]: 0.520953
+[ INFO] [1658944172.457572989, 46.424000000]: Range at scan->ranges[633]: 0.521273
+[ INFO] [1658944172.457581780, 46.424000000]: Range at scan->ranges[634]: 0.520155
+[ INFO] [1658944172.457588937, 46.424000000]: Range at scan->ranges[635]: 0.516995
+[ INFO] [1658944172.457596677, 46.424000000]: Range at scan->ranges[636]: 0.517322
+[ INFO] [1658944172.457605805, 46.424000000]: Range at scan->ranges[637]: 0.517622
+[ INFO] [1658944172.457613911, 46.424000000]: Range at scan->ranges[638]: 0.514787
+[ INFO] [1658944172.457622608, 46.424000000]: Range at scan->ranges[639]: 0.515311
+[ INFO] [1658944172.457629586, 46.424000000]: Range at scan->ranges[640]: 0.513275
+[ INFO] [1658944172.457636494, 46.424000000]: Range at scan->ranges[641]: 0.512767
+[ INFO] [1658944172.457643283, 46.424000000]: Range at scan->ranges[642]: 0.511293
+[ INFO] [1658944172.457652037, 46.424000000]: Range at scan->ranges[643]: 0.508855
+[ INFO] [1658944172.457659283, 46.424000000]: Range at scan->ranges[644]: 0.509055
+[ INFO] [1658944172.457666174, 46.424000000]: Range at scan->ranges[645]: 0.507022
+[ INFO] [1658944172.457674162, 46.424000000]: Range at scan->ranges[646]: 0.508737
+[ INFO] [1658944172.457682950, 46.424000000]: Range at scan->ranges[647]: 0.508741
+[ INFO] [1658944172.457690565, 46.424000000]: Range at scan->ranges[648]: 0.506375
+[ INFO] [1658944172.457697682, 46.424000000]: Range at scan->ranges[649]: 0.503737
+[ INFO] [1658944172.457706294, 46.424000000]: Range at scan->ranges[650]: 0.503167
+[ INFO] [1658944172.457713523, 46.424000000]: Range at scan->ranges[651]: 0.502664
+[ INFO] [1658944172.457722444, 46.424000000]: Range at scan->ranges[652]: 0.499560
+[ INFO] [1658944172.457729399, 46.424000000]: Range at scan->ranges[653]: 0.502630
+[ INFO] [1658944172.457736444, 46.424000000]: Range at scan->ranges[654]: 0.501192
+[ INFO] [1658944172.457745263, 46.424000000]: Range at scan->ranges[655]: 0.500062
+[ INFO] [1658944172.457752123, 46.424000000]: Range at scan->ranges[656]: 0.498611
+[ INFO] [1658944172.457759188, 46.424000000]: Range at scan->ranges[657]: 0.496047
+[ INFO] [1658944172.457768197, 46.424000000]: Range at scan->ranges[658]: 0.497386
+[ INFO] [1658944172.457775248, 46.424000000]: Range at scan->ranges[659]: 0.494319
+[ INFO] [1658944172.457793817, 46.424000000]: Range at scan->ranges[660]: 0.494951
+[ INFO] [1658944172.457813744, 46.424000000]: Range at scan->ranges[661]: 0.496110
+[ INFO] [1658944172.457821541, 46.424000000]: Range at scan->ranges[662]: 0.492930
+[ INFO] [1658944172.457830352, 46.424000000]: Range at scan->ranges[663]: 0.492163
+[ INFO] [1658944172.457837199, 46.424000000]: Range at scan->ranges[664]: 0.491990
+[ INFO] [1658944172.457844474, 46.424000000]: Range at scan->ranges[665]: 0.491579
+[ INFO] [1658944172.457853044, 46.424000000]: Range at scan->ranges[666]: 0.491103
+[ INFO] [1658944172.457860106, 46.424000000]: Range at scan->ranges[667]: 0.488803
+[ INFO] [1658944172.457869033, 46.424000000]: Range at scan->ranges[668]: 0.488398
+[ INFO] [1658944172.457877604, 46.424000000]: Range at scan->ranges[669]: 0.489339
+[ INFO] [1658944172.457884660, 46.424000000]: Range at scan->ranges[670]: 0.485331
+[ INFO] [1658944172.457891598, 46.424000000]: Range at scan->ranges[671]: 0.486356
+[ INFO] [1658944172.457900617, 46.424000000]: Range at scan->ranges[672]: 0.485136
+[ INFO] [1658944172.457907536, 46.424000000]: Range at scan->ranges[673]: 0.483789
+[ INFO] [1658944172.457914344, 46.424000000]: Range at scan->ranges[674]: 0.484426
+[ INFO] [1658944172.457923127, 46.424000000]: Range at scan->ranges[675]: 0.482518
+[ INFO] [1658944172.457930043, 46.424000000]: Range at scan->ranges[676]: 0.483244
+[ INFO] [1658944172.457939543, 46.424000000]: Range at scan->ranges[677]: 0.482335
+[ INFO] [1658944172.457948403, 46.424000000]: Range at scan->ranges[678]: 0.482615
+[ INFO] [1658944172.457955623, 46.424000000]: Range at scan->ranges[679]: 0.481704
+[ INFO] [1658944172.457964215, 46.424000000]: Range at scan->ranges[680]: 0.479437
+[ INFO] [1658944172.457971161, 46.424000000]: Range at scan->ranges[681]: 0.481176
+[ INFO] [1658944172.457978189, 46.424000000]: Range at scan->ranges[682]: 0.478536
+[ INFO] [1658944172.457986981, 46.424000000]: Range at scan->ranges[683]: 0.474163
+[ INFO] [1658944172.457993958, 46.424000000]: Range at scan->ranges[684]: 0.476339
+[ INFO] [1658944172.458000969, 46.424000000]: Range at scan->ranges[685]: 0.476196
+[ INFO] [1658944172.458010229, 46.424000000]: Range at scan->ranges[686]: 0.476004
+[ INFO] [1658944172.458017218, 46.424000000]: Range at scan->ranges[687]: 0.475962
+[ INFO] [1658944172.458025876, 46.424000000]: Range at scan->ranges[688]: 0.474278
+[ INFO] [1658944172.458032723, 46.424000000]: Range at scan->ranges[689]: 0.473286
+[ INFO] [1658944172.458039649, 46.424000000]: Range at scan->ranges[690]: 0.472089
+[ INFO] [1658944172.458048454, 46.424000000]: Range at scan->ranges[691]: 0.471967
+[ INFO] [1658944172.458055458, 46.424000000]: Range at scan->ranges[692]: 0.470910
+[ INFO] [1658944172.458062740, 46.424000000]: Range at scan->ranges[693]: 0.470448
+[ INFO] [1658944172.458071444, 46.424000000]: Range at scan->ranges[694]: 0.469828
+[ INFO] [1658944172.458078410, 46.424000000]: Range at scan->ranges[695]: 0.470283
+[ INFO] [1658944172.458087100, 46.424000000]: Range at scan->ranges[696]: 0.468402
+[ INFO] [1658944172.458094021, 46.424000000]: Range at scan->ranges[697]: 0.469754
+[ INFO] [1658944172.458100833, 46.424000000]: Range at scan->ranges[698]: 0.466435
+[ INFO] [1658944172.458109549, 46.424000000]: Range at scan->ranges[699]: 0.465916
+[ INFO] [1658944172.458117114, 46.424000000]: Range at scan->ranges[700]: 0.467544
+[ INFO] [1658944172.458124081, 46.424000000]: Range at scan->ranges[701]: 0.465433
+[ INFO] [1658944172.458133003, 46.424000000]: Range at scan->ranges[702]: 0.463684
+[ INFO] [1658944172.458139989, 46.424000000]: Range at scan->ranges[703]: 0.466837
+[ INFO] [1658944172.458148656, 46.424000000]: Range at scan->ranges[704]: 0.462673
+[ INFO] [1658944172.458155539, 46.424000000]: Range at scan->ranges[705]: 0.464321
+[ INFO] [1658944172.458162313, 46.424000000]: Range at scan->ranges[706]: 0.462815
+[ INFO] [1658944172.458172042, 46.424000000]: Range at scan->ranges[707]: 0.463336
+[ INFO] [1658944172.458178909, 46.424000000]: Range at scan->ranges[708]: 0.462092
+[ INFO] [1658944172.458185720, 46.424000000]: Range at scan->ranges[709]: 0.462040
+[ INFO] [1658944172.458194693, 46.424000000]: Range at scan->ranges[710]: 0.459635
+[ INFO] [1658944172.458201620, 46.424000000]: Range at scan->ranges[711]: 0.459205
+[ INFO] [1658944172.458209487, 46.424000000]: Range at scan->ranges[712]: 0.460856
+[ INFO] [1658944172.458218146, 46.424000000]: Range at scan->ranges[713]: 0.459302
+[ INFO] [1658944172.458225292, 46.424000000]: Range at scan->ranges[714]: 0.458665
+[ INFO] [1658944172.458232053, 46.424000000]: Range at scan->ranges[715]: 0.460274
+[ INFO] [1658944172.458241567, 46.424000000]: Range at scan->ranges[716]: 0.456697
+[ INFO] [1658944172.458248383, 46.424000000]: Range at scan->ranges[717]: 0.455656
+[ INFO] [1658944172.458255501, 46.424000000]: Range at scan->ranges[718]: 0.455067
+[ INFO] [1658944172.458262547, 46.424000000]: Range at scan->ranges[719]: 0.456200
+[ INFO] [1658944172.458271078, 46.424000000]: Range at scan->ranges[720]: 0.455964
+[ INFO] [1658944172.458278472, 46.424000000]: Range at scan->ranges[721]: 0.458070
+[ INFO] [1658944172.458285366, 46.424000000]: Range at scan->ranges[722]: 0.455410
+[ INFO] [1658944172.458294055, 46.424000000]: Range at scan->ranges[723]: 0.453626
+[ INFO] [1658944172.458300933, 46.424000000]: Range at scan->ranges[724]: 0.454431
+[ INFO] [1658944172.458307826, 46.424000000]: Range at scan->ranges[725]: 0.453330
+[ INFO] [1658944172.458314907, 46.424000000]: Range at scan->ranges[726]: 0.453755
+[ INFO] [1658944172.458323818, 46.424000000]: Range at scan->ranges[727]: 0.451831
+[ INFO] [1658944172.458331126, 46.424000000]: Range at scan->ranges[728]: 0.450108
+[ INFO] [1658944172.458345652, 46.424000000]: Range at scan->ranges[729]: 0.450945
+[ INFO] [1658944172.458355527, 46.424000000]: Range at scan->ranges[730]: 0.450493
+[ INFO] [1658944172.458362661, 46.424000000]: Range at scan->ranges[731]: 0.451968
+[ INFO] [1658944172.458371360, 46.424000000]: Range at scan->ranges[732]: 0.450081
+[ INFO] [1658944172.458378265, 46.424000000]: Range at scan->ranges[733]: 0.447386
+[ INFO] [1658944172.458387082, 46.424000000]: Range at scan->ranges[734]: 0.451280
+[ INFO] [1658944172.458394319, 46.424000000]: Range at scan->ranges[735]: 0.449157
+[ INFO] [1658944172.458401247, 46.424000000]: Range at scan->ranges[736]: 0.448761
+[ INFO] [1658944172.458409890, 46.424000000]: Range at scan->ranges[737]: 0.447626
+[ INFO] [1658944172.458417859, 46.424000000]: Range at scan->ranges[738]: 0.448567
+[ INFO] [1658944172.458427042, 46.424000000]: Range at scan->ranges[739]: 0.450041
+[ INFO] [1658944172.458434759, 46.424000000]: Range at scan->ranges[740]: 0.447355
+[ INFO] [1658944172.458440631, 46.424000000]: Range at scan->ranges[741]: 0.448026
+[ INFO] [1658944172.458446829, 46.424000000]: Range at scan->ranges[742]: 0.446766
+[ INFO] [1658944172.458675692, 46.425000000]: Range at scan->ranges[743]: 0.445592
+[ INFO] [1658944172.458688818, 46.425000000]: Range at scan->ranges[744]: 0.446148
+[ INFO] [1658944172.458696254, 46.425000000]: Range at scan->ranges[745]: 0.445503
+[ INFO] [1658944172.458705267, 46.425000000]: Range at scan->ranges[746]: 0.445954
+[ INFO] [1658944172.458712513, 46.425000000]: Range at scan->ranges[747]: 0.442976
+[ INFO] [1658944172.458722449, 46.425000000]: Range at scan->ranges[748]: 0.443982
+[ INFO] [1658944172.458729756, 46.425000000]: Range at scan->ranges[749]: 0.445034
+[ INFO] [1658944172.458739785, 46.425000000]: Range at scan->ranges[750]: 0.442513
+[ INFO] [1658944172.458746954, 46.425000000]: Range at scan->ranges[751]: 0.443463
+[ INFO] [1658944172.458758534, 46.425000000]: Range at scan->ranges[752]: 0.443662
+[ INFO] [1658944172.458765771, 46.425000000]: Range at scan->ranges[753]: 0.440555
+[ INFO] [1658944172.458774812, 46.425000000]: Range at scan->ranges[754]: 0.442056
+[ INFO] [1658944172.458781979, 46.425000000]: Range at scan->ranges[755]: 0.441503
+[ INFO] [1658944172.458789179, 46.425000000]: Range at scan->ranges[756]: 0.439393
+[ INFO] [1658944172.458798090, 46.425000000]: Range at scan->ranges[757]: 0.439150
+[ INFO] [1658944172.458805367, 46.425000000]: Range at scan->ranges[758]: 0.439550
+[ INFO] [1658944172.458812310, 46.425000000]: Range at scan->ranges[759]: 0.441885
+[ INFO] [1658944172.458820992, 46.425000000]: Range at scan->ranges[760]: 0.441432
+[ INFO] [1658944172.458828734, 46.425000000]: Range at scan->ranges[761]: 0.437892
+[ INFO] [1658944172.458835860, 46.425000000]: Range at scan->ranges[762]: 0.439003
+[ INFO] [1658944172.458845155, 46.425000000]: Range at scan->ranges[763]: 0.439022
+[ INFO] [1658944172.458852258, 46.425000000]: Range at scan->ranges[764]: 0.438858
+[ INFO] [1658944172.458860721, 46.425000000]: Range at scan->ranges[765]: 0.439036
+[ INFO] [1658944172.458867913, 46.425000000]: Range at scan->ranges[766]: 0.437946
+[ INFO] [1658944172.458874982, 46.425000000]: Range at scan->ranges[767]: 0.437866
+[ INFO] [1658944172.458883674, 46.425000000]: Range at scan->ranges[768]: 0.438111
+[ INFO] [1658944172.458890673, 46.425000000]: Range at scan->ranges[769]: 0.439152
+[ INFO] [1658944172.458918275, 46.425000000]: Range at scan->ranges[770]: 0.437642
+[ INFO] [1658944172.458927486, 46.425000000]: Range at scan->ranges[771]: 0.437115
+[ INFO] [1658944172.458934692, 46.425000000]: Range at scan->ranges[772]: 0.436400
+[ INFO] [1658944172.458943359, 46.425000000]: Range at scan->ranges[773]: 0.436824
+[ INFO] [1658944172.458950608, 46.425000000]: Range at scan->ranges[774]: 0.437060
+[ INFO] [1658944172.458959429, 46.425000000]: Range at scan->ranges[775]: 0.437134
+[ INFO] [1658944172.458968155, 46.425000000]: Range at scan->ranges[776]: 0.435843
+[ INFO] [1658944172.458975773, 46.425000000]: Range at scan->ranges[777]: 0.435620
+[ INFO] [1658944172.458984370, 46.425000000]: Range at scan->ranges[778]: 0.434158
+[ INFO] [1658944172.458991441, 46.425000000]: Range at scan->ranges[779]: 0.435943
+[ INFO] [1658944172.458998380, 46.425000000]: Range at scan->ranges[780]: 0.436205
+[ INFO] [1658944172.459007221, 46.425000000]: Range at scan->ranges[781]: 0.434470
+[ INFO] [1658944172.459014576, 46.425000000]: Range at scan->ranges[782]: 0.434279
+[ INFO] [1658944172.459023386, 46.425000000]: Range at scan->ranges[783]: 0.434703
+[ INFO] [1658944172.459030650, 46.425000000]: Range at scan->ranges[784]: 0.435677
+[ INFO] [1658944172.459037562, 46.425000000]: Range at scan->ranges[785]: 0.434366
+[ INFO] [1658944172.459046392, 46.425000000]: Range at scan->ranges[786]: 0.432450
+[ INFO] [1658944172.459053527, 46.425000000]: Range at scan->ranges[787]: 0.433881
+[ INFO] [1658944172.459061649, 46.425000000]: Range at scan->ranges[788]: 0.433108
+[ INFO] [1658944172.459070455, 46.425000000]: Range at scan->ranges[789]: 0.432014
+[ INFO] [1658944172.459077730, 46.425000000]: Range at scan->ranges[790]: 0.433463
+[ INFO] [1658944172.459086762, 46.425000000]: Range at scan->ranges[791]: 0.432512
+[ INFO] [1658944172.459093858, 46.425000000]: Range at scan->ranges[792]: 0.434140
+[ INFO] [1658944172.459100787, 46.425000000]: Range at scan->ranges[793]: 0.434209
+[ INFO] [1658944172.459109536, 46.425000000]: Range at scan->ranges[794]: 0.430266
+[ INFO] [1658944172.459116546, 46.425000000]: Range at scan->ranges[795]: 0.432802
+[ INFO] [1658944172.459123356, 46.425000000]: Range at scan->ranges[796]: 0.431204
+[ INFO] [1658944172.459130285, 46.425000000]: Range at scan->ranges[797]: 0.428017
+[ INFO] [1658944172.459137651, 46.425000000]: Range at scan->ranges[798]: 0.430794
+[ INFO] [1658944172.459144464, 46.425000000]: Range at scan->ranges[799]: 0.429449
+[ INFO] [1658944172.459151117, 46.425000000]: Range at scan->ranges[800]: 0.431441
+[ INFO] [1658944172.459157886, 46.425000000]: Range at scan->ranges[801]: 0.429998
+[ INFO] [1658944172.459164853, 46.425000000]: Range at scan->ranges[802]: 0.431892
+[ INFO] [1658944172.459171580, 46.425000000]: Range at scan->ranges[803]: 0.428713
+[ INFO] [1658944172.459178234, 46.425000000]: Range at scan->ranges[804]: 0.430693
+[ INFO] [1658944172.459185206, 46.425000000]: Range at scan->ranges[805]: 0.429080
+[ INFO] [1658944172.459192185, 46.425000000]: Range at scan->ranges[806]: 0.430477
+[ INFO] [1658944172.459199091, 46.425000000]: Range at scan->ranges[807]: 0.427995
+[ INFO] [1658944172.459205877, 46.425000000]: Range at scan->ranges[808]: 0.428813
+[ INFO] [1658944172.459212602, 46.425000000]: Range at scan->ranges[809]: 0.429879
+[ INFO] [1658944172.459219464, 46.425000000]: Range at scan->ranges[810]: 0.430901
+[ INFO] [1658944172.459226191, 46.425000000]: Range at scan->ranges[811]: 0.429321
+[ INFO] [1658944172.459233259, 46.425000000]: Range at scan->ranges[812]: 0.429456
+[ INFO] [1658944172.459239930, 46.425000000]: Range at scan->ranges[813]: 0.428038
+[ INFO] [1658944172.459246805, 46.425000000]: Range at scan->ranges[814]: 0.429315
+[ INFO] [1658944172.459253563, 46.425000000]: Range at scan->ranges[815]: 0.427456
+[ INFO] [1658944172.459260307, 46.425000000]: Range at scan->ranges[816]: 0.430077
+[ INFO] [1658944172.459267101, 46.425000000]: Range at scan->ranges[817]: 0.427462
+[ INFO] [1658944172.459274024, 46.425000000]: Range at scan->ranges[818]: 0.429357
+[ INFO] [1658944172.459281045, 46.425000000]: Range at scan->ranges[819]: 0.429206
+[ INFO] [1658944172.459287877, 46.425000000]: Range at scan->ranges[820]: 0.428479
+[ INFO] [1658944172.459294627, 46.425000000]: Range at scan->ranges[821]: 0.427946
+[ INFO] [1658944172.459301649, 46.425000000]: Range at scan->ranges[822]: 0.429556
+[ INFO] [1658944172.459308372, 46.425000000]: Range at scan->ranges[823]: 0.428005
+[ INFO] [1658944172.459315258, 46.425000000]: Range at scan->ranges[824]: 0.428450
+[ INFO] [1658944172.459322037, 46.425000000]: Range at scan->ranges[825]: 0.428969
+[ INFO] [1658944172.459332791, 46.425000000]: Range at scan->ranges[826]: 0.427926
+[ INFO] [1658944172.459339838, 46.425000000]: Range at scan->ranges[827]: 0.429048
+[ INFO] [1658944172.459346738, 46.425000000]: Range at scan->ranges[828]: 0.428303
+[ INFO] [1658944172.459353444, 46.425000000]: Range at scan->ranges[829]: 0.429320
+[ INFO] [1658944172.459360149, 46.425000000]: Range at scan->ranges[830]: 0.429363
+[ INFO] [1658944172.459366994, 46.425000000]: Range at scan->ranges[831]: 0.429588
+[ INFO] [1658944172.459373844, 46.425000000]: Range at scan->ranges[832]: 0.426576
+[ INFO] [1658944172.459380997, 46.425000000]: Range at scan->ranges[833]: 0.430064
+[ INFO] [1658944172.459387714, 46.425000000]: Range at scan->ranges[834]: 0.427787
+[ INFO] [1658944172.459394390, 46.425000000]: Range at scan->ranges[835]: 0.426588
+[ INFO] [1658944172.459401388, 46.425000000]: Range at scan->ranges[836]: 0.426755
+[ INFO] [1658944172.459408365, 46.425000000]: Range at scan->ranges[837]: 0.427734
+[ INFO] [1658944172.459415319, 46.425000000]: Range at scan->ranges[838]: 0.428678
+[ INFO] [1658944172.459422244, 46.425000000]: Range at scan->ranges[839]: 0.427954
+[ INFO] [1658944172.459429192, 46.425000000]: Range at scan->ranges[840]: 0.428603
+[ INFO] [1658944172.459436154, 46.425000000]: Range at scan->ranges[841]: 0.428188
+[ INFO] [1658944172.459443237, 46.425000000]: Range at scan->ranges[842]: 0.427392
+[ INFO] [1658944172.459458495, 46.425000000]: Range at scan->ranges[843]: 0.428603
+[ INFO] [1658944172.459465842, 46.425000000]: Range at scan->ranges[844]: 0.428357
+[ INFO] [1658944172.459472695, 46.425000000]: Range at scan->ranges[845]: 0.427959
+[ INFO] [1658944172.459479539, 46.425000000]: Range at scan->ranges[846]: 0.428081
+[ INFO] [1658944172.459486565, 46.425000000]: Range at scan->ranges[847]: 0.427208
+[ INFO] [1658944172.459493475, 46.425000000]: Range at scan->ranges[848]: 0.427842
+[ INFO] [1658944172.459500478, 46.425000000]: Range at scan->ranges[849]: 0.429728
+[ INFO] [1658944172.459507292, 46.425000000]: Range at scan->ranges[850]: 0.428470
+[ INFO] [1658944172.459514056, 46.425000000]: Range at scan->ranges[851]: 0.427581
+[ INFO] [1658944172.459520852, 46.425000000]: Range at scan->ranges[852]: 0.427998
+[ INFO] [1658944172.459528029, 46.425000000]: Range at scan->ranges[853]: 0.427578
+[ INFO] [1658944172.459534881, 46.425000000]: Range at scan->ranges[854]: 0.428119
+[ INFO] [1658944172.459541704, 46.425000000]: Range at scan->ranges[855]: 0.427097
+[ INFO] [1658944172.459548425, 46.425000000]: Range at scan->ranges[856]: 0.429378
+[ INFO] [1658944172.459555263, 46.425000000]: Range at scan->ranges[857]: 0.429006
+[ INFO] [1658944172.459562824, 46.425000000]: Range at scan->ranges[858]: 0.428704
+[ INFO] [1658944172.459569660, 46.425000000]: Range at scan->ranges[859]: 0.427813
+[ INFO] [1658944172.459576636, 46.425000000]: Range at scan->ranges[860]: 0.429421
+[ INFO] [1658944172.459583407, 46.425000000]: Range at scan->ranges[861]: 0.428871
+[ INFO] [1658944172.459590226, 46.425000000]: Range at scan->ranges[862]: 0.427855
+[ INFO] [1658944172.459597115, 46.425000000]: Range at scan->ranges[863]: 0.428115
+[ INFO] [1658944172.459603949, 46.425000000]: Range at scan->ranges[864]: 0.429679
+[ INFO] [1658944172.459610764, 46.425000000]: Range at scan->ranges[865]: 0.428979
+[ INFO] [1658944172.459617689, 46.425000000]: Range at scan->ranges[866]: 0.427042
+[ INFO] [1658944172.459624454, 46.425000000]: Range at scan->ranges[867]: 0.431676
+[ INFO] [1658944172.459631351, 46.425000000]: Range at scan->ranges[868]: 0.428812
+[ INFO] [1658944172.459638026, 46.425000000]: Range at scan->ranges[869]: 0.427472
+[ INFO] [1658944172.459644649, 46.425000000]: Range at scan->ranges[870]: 0.431190
+[ INFO] [1658944172.459651446, 46.425000000]: Range at scan->ranges[871]: 0.429559
+[ INFO] [1658944172.459658437, 46.425000000]: Range at scan->ranges[872]: 0.429112
+[ INFO] [1658944172.459665156, 46.425000000]: Range at scan->ranges[873]: 0.427895
+[ INFO] [1658944172.459671784, 46.425000000]: Range at scan->ranges[874]: 0.430203
+[ INFO] [1658944172.459678522, 46.425000000]: Range at scan->ranges[875]: 0.431896
+[ INFO] [1658944172.459685423, 46.425000000]: Range at scan->ranges[876]: 0.429203
+
+FRONT
+[ INFO] [1658940985.515136018, 84.108000000]: Range at scan->ranges[1199]: 0.434390
+[ INFO] [1658940985.515145031, 84.108000000]: Range at scan->ranges[1200]: 0.434304
+[ INFO] [1658940985.515151879, 84.108000000]: Range at scan->ranges[1201]: 0.432932
+[ INFO] [1658940985.515160586, 84.108000000]: Range at scan->ranges[1202]: 0.431903
+[ INFO] [1658940985.515167497, 84.108000000]: Range at scan->ranges[1203]: 0.430414
+[ INFO] [1658940985.515176794, 84.108000000]: Range at scan->ranges[1204]: 0.430003
+[ INFO] [1658940985.515183944, 84.108000000]: Range at scan->ranges[1205]: 0.430417
+[ INFO] [1658940985.515192860, 84.108000000]: Range at scan->ranges[1206]: 0.429168
+[ INFO] [1658940985.515199693, 84.108000000]: Range at scan->ranges[1207]: 0.427797
+[ INFO] [1658940985.515208282, 84.108000000]: Range at scan->ranges[1208]: 0.429086
+[ INFO] [1658940985.515215990, 84.108000000]: Range at scan->ranges[1209]: 0.427392
+[ INFO] [1658940985.515222969, 84.108000000]: Range at scan->ranges[1210]: 0.427097
+[ INFO] [1658940985.515237752, 84.108000000]: Range at scan->ranges[1211]: 0.425522
+[ INFO] [1658940985.515245539, 84.108000000]: Range at scan->ranges[1212]: 0.424784
+[ INFO] [1658940985.515254679, 84.108000000]: Range at scan->ranges[1213]: 0.425543
+[ INFO] [1658940985.515261510, 84.108000000]: Range at scan->ranges[1214]: 0.424606
+[ INFO] [1658940985.515271000, 84.108000000]: Range at scan->ranges[1215]: 0.422286
+[ INFO] [1658940985.515278398, 84.108000000]: Range at scan->ranges[1216]: 0.422723
+[ INFO] [1658940985.515287061, 84.108000000]: Range at scan->ranges[1217]: 0.423124
+[ INFO] [1658940985.515294764, 84.108000000]: Range at scan->ranges[1218]: 0.423312
+[ INFO] [1658940985.515301816, 84.108000000]: Range at scan->ranges[1219]: 0.423294
+[ INFO] [1658940985.515321421, 84.108000000]: Range at scan->ranges[1220]: 0.419942
+[ INFO] [1658940985.515328587, 84.108000000]: Range at scan->ranges[1221]: 0.419401
+[ INFO] [1658940985.515337415, 84.108000000]: Range at scan->ranges[1222]: 0.418693
+[ INFO] [1658940985.515344383, 84.108000000]: Range at scan->ranges[1223]: 0.418422
+[ INFO] [1658940985.515352680, 84.108000000]: Range at scan->ranges[1224]: 0.418224
+[ INFO] [1658940985.515359943, 84.108000000]: Range at scan->ranges[1225]: 0.416434
+[ INFO] [1658940985.515368982, 84.108000000]: Range at scan->ranges[1226]: 0.418734
+[ INFO] [1658940985.515375914, 84.108000000]: Range at scan->ranges[1227]: 0.418330
+[ INFO] [1658940985.515384685, 84.108000000]: Range at scan->ranges[1228]: 0.416824
+[ INFO] [1658940985.515391503, 84.108000000]: Range at scan->ranges[1229]: 0.415612
+[ INFO] [1658940985.515400061, 84.108000000]: Range at scan->ranges[1230]: 0.414850
+[ INFO] [1658940985.515406889, 84.108000000]: Range at scan->ranges[1231]: 0.412616
+[ INFO] [1658940985.515416894, 84.108000000]: Range at scan->ranges[1232]: 0.413798
+[ INFO] [1658940985.515423650, 84.108000000]: Range at scan->ranges[1233]: 0.413739
+[ INFO] [1658940985.515432717, 84.108000000]: Range at scan->ranges[1234]: 0.415733
+[ INFO] [1658940985.515439617, 84.108000000]: Range at scan->ranges[1235]: 0.412289
+[ INFO] [1658940985.515448455, 84.108000000]: Range at scan->ranges[1236]: 0.412383
+[ INFO] [1658940985.515455349, 84.108000000]: Range at scan->ranges[1237]: 0.412535
+[ INFO] [1658940985.515463801, 84.108000000]: Range at scan->ranges[1238]: 0.412997
+[ INFO] [1658940985.515470965, 84.108000000]: Range at scan->ranges[1239]: 0.413366
+[ INFO] [1658940985.515479464, 84.108000000]: Range at scan->ranges[1240]: 0.410567
+[ INFO] [1658940985.515486245, 84.108000000]: Range at scan->ranges[1241]: 0.411362
+[ INFO] [1658940985.515495449, 84.108000000]: Range at scan->ranges[1242]: 0.409442
+[ INFO] [1658940985.515502377, 84.108000000]: Range at scan->ranges[1243]: 0.411417
+[ INFO] [1658940985.515510549, 84.108000000]: Range at scan->ranges[1244]: 0.409473
+[ INFO] [1658940985.515520229, 84.108000000]: Range at scan->ranges[1245]: 0.410111
+[ INFO] [1658940985.515527297, 84.108000000]: Range at scan->ranges[1246]: 0.406957
+[ INFO] [1658940985.515536100, 84.108000000]: Range at scan->ranges[1247]: 0.408624
+[ INFO] [1658940985.515542973, 84.108000000]: Range at scan->ranges[1248]: 0.408424
+[ INFO] [1658940985.515551326, 84.108000000]: Range at scan->ranges[1249]: 0.408213
+[ INFO] [1658940985.515558138, 84.108000000]: Range at scan->ranges[1250]: 0.407879
+[ INFO] [1658940985.515567160, 84.108000000]: Range at scan->ranges[1251]: 0.406658
+[ INFO] [1658940985.515574846, 84.108000000]: Range at scan->ranges[1252]: 0.406597
+[ INFO] [1658940985.515581876, 84.108000000]: Range at scan->ranges[1253]: 0.405339
+[ INFO] [1658940985.515590306, 84.108000000]: Range at scan->ranges[1254]: 0.403249
+[ INFO] [1658940985.515597185, 84.108000000]: Range at scan->ranges[1255]: 0.403298
+[ INFO] [1658940985.515606208, 84.108000000]: Range at scan->ranges[1256]: 0.405993
+[ INFO] [1658940985.515612957, 84.108000000]: Range at scan->ranges[1257]: 0.404208
+[ INFO] [1658940985.515622115, 84.108000000]: Range at scan->ranges[1258]: 0.405086
+[ INFO] [1658940985.515655744, 84.108000000]: Range at scan->ranges[1259]: 0.401611
+[ INFO] [1658940985.515665015, 84.108000000]: Range at scan->ranges[1260]: 0.403208
+[ INFO] [1658940985.515671930, 84.108000000]: Range at scan->ranges[1261]: 0.401817
+[ INFO] [1658940985.515678857, 84.108000000]: Range at scan->ranges[1262]: 0.398799
+[ INFO] [1658940985.515685501, 84.108000000]: Range at scan->ranges[1263]: 0.400145
+[ INFO] [1658940985.515802207, 84.108000000]: Range at scan->ranges[1264]: 0.401586
+[ INFO] [1658940985.515811420, 84.108000000]: Range at scan->ranges[1265]: 0.401279
+[ INFO] [1658940985.515892868, 84.108000000]: Range at scan->ranges[1266]: 0.402546
+[ INFO] [1658940985.516162840, 84.108000000]: Range at scan->ranges[1267]: 0.401463
+[ INFO] [1658940985.516172160, 84.108000000]: Range at scan->ranges[1268]: 0.399840
+[ INFO] [1658940985.516179294, 84.108000000]: Range at scan->ranges[1269]: 0.399326
+[ INFO] [1658940985.516188232, 84.108000000]: Range at scan->ranges[1270]: 0.399922
+[ INFO] [1658940985.516195085, 84.108000000]: Range at scan->ranges[1271]: 0.400130
+[ INFO] [1658940985.516204132, 84.108000000]: Range at scan->ranges[1272]: 0.398186
+[ INFO] [1658940985.516210965, 84.108000000]: Range at scan->ranges[1273]: 0.397913
+[ INFO] [1658940985.516220293, 84.108000000]: Range at scan->ranges[1274]: 0.399028
+[ INFO] [1658940985.516227215, 84.108000000]: Range at scan->ranges[1275]: 0.397720
+[ INFO] [1658940985.516236102, 84.108000000]: Range at scan->ranges[1276]: 0.397629
+[ INFO] [1658940985.516242911, 84.108000000]: Range at scan->ranges[1277]: 0.397820
+[ INFO] [1658940985.516251685, 84.108000000]: Range at scan->ranges[1278]: 0.395520
+[ INFO] [1658940985.516258406, 84.108000000]: Range at scan->ranges[1279]: 0.395588
+[ INFO] [1658940985.516267223, 84.108000000]: Range at scan->ranges[1280]: 0.396387
+[ INFO] [1658940985.516274238, 84.108000000]: Range at scan->ranges[1281]: 0.394761
+[ INFO] [1658940985.516283312, 84.108000000]: Range at scan->ranges[1282]: 0.395203
+[ INFO] [1658940985.516290091, 84.108000000]: Range at scan->ranges[1283]: 0.396280
+[ INFO] [1658940985.516298867, 84.108000000]: Range at scan->ranges[1284]: 0.397683
+[ INFO] [1658940985.516305730, 84.108000000]: Range at scan->ranges[1285]: 0.393486
+[ INFO] [1658940985.516314228, 84.108000000]: Range at scan->ranges[1286]: 0.394095
+[ INFO] [1658940985.516321093, 84.108000000]: Range at scan->ranges[1287]: 0.393761
+[ INFO] [1658940985.516331375, 84.108000000]: Range at scan->ranges[1288]: 0.393005
+[ INFO] [1658940985.516338665, 84.108000000]: Range at scan->ranges[1289]: 0.393695
+[ INFO] [1658940985.516355498, 84.108000000]: Range at scan->ranges[1290]: 0.393494
+[ INFO] [1658940985.516362890, 84.108000000]: Range at scan->ranges[1291]: 0.393464
+[ INFO] [1658940985.516372734, 84.108000000]: Range at scan->ranges[1292]: 0.393922
+[ INFO] [1658940985.516379775, 84.108000000]: Range at scan->ranges[1293]: 0.392280
+[ INFO] [1658940985.516386803, 84.108000000]: Range at scan->ranges[1294]: 0.390368
+[ INFO] [1658940985.516396370, 84.108000000]: Range at scan->ranges[1295]: 0.391138
+[ INFO] [1658940985.516403362, 84.108000000]: Range at scan->ranges[1296]: 0.392498
+[ INFO] [1658940985.516411380, 84.108000000]: Range at scan->ranges[1297]: 0.391406
+[ INFO] [1658940985.516418404, 84.108000000]: Range at scan->ranges[1298]: 0.390896
+[ INFO] [1658940985.516427189, 84.108000000]: Range at scan->ranges[1299]: 0.391320
+[ INFO] [1658940985.516444265, 84.108000000]: Range at scan->ranges[1300]: 0.389396
+[ INFO] [1658940985.516451735, 84.108000000]: Range at scan->ranges[1301]: 0.390002
+[ INFO] [1658940985.516460758, 84.108000000]: Range at scan->ranges[1302]: 0.389672
+[ INFO] [1658940985.516467806, 84.108000000]: Range at scan->ranges[1303]: 0.389329
+[ INFO] [1658940985.516474833, 84.108000000]: Range at scan->ranges[1304]: 0.389604
+[ INFO] [1658940985.516483526, 84.108000000]: Range at scan->ranges[1305]: 0.391544
+[ INFO] [1658940985.516490435, 84.108000000]: Range at scan->ranges[1306]: 0.391336
+[ INFO] [1658940985.516497385, 84.108000000]: Range at scan->ranges[1307]: 0.390932
+[ INFO] [1658940985.516506740, 84.108000000]: Range at scan->ranges[1308]: 0.388713
+[ INFO] [1658940985.516514146, 84.108000000]: Range at scan->ranges[1309]: 0.390380
+[ INFO] [1658940985.516529767, 84.108000000]: Range at scan->ranges[1310]: 0.389774
+[ INFO] [1658940985.516537056, 84.108000000]: Range at scan->ranges[1311]: 0.389957
+[ INFO] [1658940985.516544402, 84.108000000]: Range at scan->ranges[1312]: 0.388678
+[ INFO] [1658940985.516553334, 84.108000000]: Range at scan->ranges[1313]: 0.389702
+[ INFO] [1658940985.516560284, 84.108000000]: Range at scan->ranges[1314]: 0.387935
+[ INFO] [1658940985.516567298, 84.108000000]: Range at scan->ranges[1315]: 0.387981
+[ INFO] [1658940985.516574716, 84.109000000]: Range at scan->ranges[1316]: 0.390225
+[ INFO] [1658940985.516581655, 84.109000000]: Range at scan->ranges[1317]: 0.387862
+[ INFO] [1658940985.516588684, 84.109000000]: Range at scan->ranges[1318]: 0.387116
+[ INFO] [1658940985.516597224, 84.109000000]: Range at scan->ranges[1319]: 0.388964
+[ INFO] [1658940985.516604295, 84.109000000]: Range at scan->ranges[1320]: 0.387643
+[ INFO] [1658940985.516611278, 84.109000000]: Range at scan->ranges[1321]: 0.387212
+[ INFO] [1658940985.516618160, 84.109000000]: Range at scan->ranges[1322]: 0.388449
+[ INFO] [1658940985.516625434, 84.109000000]: Range at scan->ranges[1323]: 0.385791
+[ INFO] [1658940985.516632416, 84.109000000]: Range at scan->ranges[1324]: 0.387495
+[ INFO] [1658940985.516639500, 84.109000000]: Range at scan->ranges[1325]: 0.387912
+[ INFO] [1658940985.516646429, 84.109000000]: Range at scan->ranges[1326]: 0.386876
+[ INFO] [1658940985.516653500, 84.109000000]: Range at scan->ranges[1327]: 0.386474
+[ INFO] [1658940985.516661833, 84.109000000]: Range at scan->ranges[1328]: 0.386204
+[ INFO] [1658940985.516668657, 84.109000000]: Range at scan->ranges[1329]: 0.387301
+[ INFO] [1658940985.516678239, 84.109000000]: Range at scan->ranges[1330]: 0.385853
+[ INFO] [1658940985.516685167, 84.109000000]: Range at scan->ranges[1331]: 0.385170
+[ INFO] [1658940985.516721646, 84.109000000]: Range at scan->ranges[1332]: 0.385173
+[ INFO] [1658940985.516728855, 84.109000000]: Range at scan->ranges[1333]: 0.386998
+[ INFO] [1658940985.516738278, 84.109000000]: Range at scan->ranges[1334]: 0.385619
+[ INFO] [1658940985.516745124, 84.109000000]: Range at scan->ranges[1335]: 0.386487
+[ INFO] [1658940985.516754282, 84.109000000]: Range at scan->ranges[1336]: 0.383150
+[ INFO] [1658940985.516761299, 84.109000000]: Range at scan->ranges[1337]: 0.386415
+[ INFO] [1658940985.516769770, 84.109000000]: Range at scan->ranges[1338]: 0.385830
+[ INFO] [1658940985.516776638, 84.109000000]: Range at scan->ranges[1339]: 0.385025
+[ INFO] [1658940985.516785637, 84.109000000]: Range at scan->ranges[1340]: 0.385897
+[ INFO] [1658940985.516792519, 84.109000000]: Range at scan->ranges[1341]: 0.385983
+[ INFO] [1658940985.516842464, 84.109000000]: Range at scan->ranges[1342]: 0.385914
+[ INFO] [1658940985.516851243, 84.109000000]: Range at scan->ranges[1343]: 0.385233
+[ INFO] [1658940985.516860432, 84.109000000]: Range at scan->ranges[1344]: 0.386329
+[ INFO] [1658940985.516867264, 84.109000000]: Range at scan->ranges[1345]: 0.385375
+[ INFO] [1658940985.516874108, 84.109000000]: Range at scan->ranges[1346]: 0.383982
+[ INFO] [1658940985.516882928, 84.109000000]: Range at scan->ranges[1347]: 0.385203
+[ INFO] [1658940985.516889984, 84.109000000]: Range at scan->ranges[1348]: 0.385453
+[ INFO] [1658940985.516904665, 84.109000000]: Range at scan->ranges[1349]: 0.384066
+[ INFO] [1658940985.516911894, 84.109000000]: Range at scan->ranges[1350]: 0.385306
+[ INFO] [1658940985.516922276, 84.109000000]: Range at scan->ranges[1351]: 0.384790
+[ INFO] [1658940985.516929229, 84.109000000]: Range at scan->ranges[1352]: 0.384179
+[ INFO] [1658940985.516937896, 84.109000000]: Range at scan->ranges[1353]: 0.386091
+[ INFO] [1658940985.516944814, 84.109000000]: Range at scan->ranges[1354]: 0.386643
+[ INFO] [1658940985.516953963, 84.109000000]: Range at scan->ranges[1355]: 0.385714
+[ INFO] [1658940985.516961832, 84.109000000]: Range at scan->ranges[1356]: 0.384125
+[ INFO] [1658940985.516968816, 84.109000000]: Range at scan->ranges[1357]: 0.387107
+[ INFO] [1658940985.516978978, 84.109000000]: Range at scan->ranges[1358]: 0.383725
+[ INFO] [1658940985.516985883, 84.109000000]: Range at scan->ranges[1359]: 0.386046
+[ INFO] [1658940985.517002832, 84.109000000]: Range at scan->ranges[1360]: 0.383810
+[ INFO] [1658940985.517009722, 84.109000000]: Range at scan->ranges[1361]: 0.384020
+[ INFO] [1658940985.517018949, 84.109000000]: Range at scan->ranges[1362]: 0.383547
+[ INFO] [1658940985.517025788, 84.109000000]: Range at scan->ranges[1363]: 0.383678
+[ INFO] [1658940985.517034775, 84.109000000]: Range at scan->ranges[1364]: 0.383804
+[ INFO] [1658940985.517042028, 84.109000000]: Range at scan->ranges[1365]: 0.384972
+[ INFO] [1658940985.517048948, 84.109000000]: Range at scan->ranges[1366]: 0.383435
+[ INFO] [1658940985.517057889, 84.109000000]: Range at scan->ranges[1367]: 0.385007
+[ INFO] [1658940985.517064805, 84.109000000]: Range at scan->ranges[1368]: 0.385723
+[ INFO] [1658940985.517073420, 84.109000000]: Range at scan->ranges[1369]: 0.384492
+[ INFO] [1658940985.517080256, 84.109000000]: Range at scan->ranges[1370]: 0.384587
+[ INFO] [1658940985.517088783, 84.109000000]: Range at scan->ranges[1371]: 0.383466
+[ INFO] [1658940985.517096127, 84.109000000]: Range at scan->ranges[1372]: 0.383620
+[ INFO] [1658940985.517104947, 84.109000000]: Range at scan->ranges[1373]: 0.384993
+[ INFO] [1658940985.517111841, 84.109000000]: Range at scan->ranges[1374]: 0.384769
+[ INFO] [1658940985.517118775, 84.109000000]: Range at scan->ranges[1375]: 0.384012
+[ INFO] [1658940985.517125638, 84.109000000]: Range at scan->ranges[1376]: 0.385170
+[ INFO] [1658940985.517134484, 84.109000000]: Range at scan->ranges[1377]: 0.384428
+[ INFO] [1658940985.517141182, 84.109000000]: Range at scan->ranges[1378]: 0.385758
+[ INFO] [1658940985.517149956, 84.109000000]: Range at scan->ranges[1379]: 0.386166
+[ INFO] [1658940985.517156953, 84.109000000]: Range at scan->ranges[1380]: 0.383896
+[ INFO] [1658940985.517165882, 84.109000000]: Range at scan->ranges[1381]: 0.384818
+[ INFO] [1658940985.517172592, 84.109000000]: Range at scan->ranges[1382]: 0.384567
+[ INFO] [1658940985.517181861, 84.109000000]: Range at scan->ranges[1383]: 0.385428
+[ INFO] [1658940985.517188749, 84.109000000]: Range at scan->ranges[1384]: 0.385279
+[ INFO] [1658940985.517197855, 84.109000000]: Range at scan->ranges[1385]: 0.387040
+[ INFO] [1658940985.517204842, 84.109000000]: Range at scan->ranges[1386]: 0.385903
+[ INFO] [1658940985.517213365, 84.109000000]: Range at scan->ranges[1387]: 0.385565
+[ INFO] [1658940985.517220467, 84.109000000]: Range at scan->ranges[1388]: 0.385829
+[ INFO] [1658940985.517229200, 84.109000000]: Range at scan->ranges[1389]: 0.384852
+[ INFO] [1658940985.517236311, 84.109000000]: Range at scan->ranges[1390]: 0.384873
+[ INFO] [1658940985.517245763, 84.109000000]: Range at scan->ranges[1391]: 0.386707
+[ INFO] [1658940985.517254658, 84.109000000]: Range at scan->ranges[1392]: 0.386242
+[ INFO] [1658940985.517261921, 84.109000000]: Range at scan->ranges[1393]: 0.386202
+[ INFO] [1658940985.517270688, 84.109000000]: Range at scan->ranges[1394]: 0.384795
+[ INFO] [1658940985.517277730, 84.109000000]: Range at scan->ranges[1395]: 0.385740
+[ INFO] [1658940985.517288600, 84.109000000]: Range at scan->ranges[1396]: 0.387117
+[ INFO] [1658940985.517295697, 84.109000000]: Range at scan->ranges[1397]: 0.386435
+[ INFO] [1658940985.517306687, 84.109000000]: Range at scan->ranges[1398]: 0.387623
+[ INFO] [1658940985.517314801, 84.109000000]: Range at scan->ranges[1399]: 0.384983
+[ INFO] [1658940985.517323933, 84.109000000]: Range at scan->ranges[1400]: 0.385544
+[ INFO] [1658940985.517330866, 84.109000000]: Range at scan->ranges[1401]: 0.386898
+[ INFO] [1658940985.517340233, 84.109000000]: Range at scan->ranges[1402]: 0.387480
+[ INFO] [1658940985.517347073, 84.109000000]: Range at scan->ranges[1403]: 0.388960
+[ INFO] [1658940985.517356557, 84.109000000]: Range at scan->ranges[1404]: 0.386950
+[ INFO] [1658940985.517365497, 84.109000000]: Range at scan->ranges[1405]: 0.385844
+[ INFO] [1658940985.517372463, 84.109000000]: Range at scan->ranges[1406]: 0.386765
+[ INFO] [1658940985.517381665, 84.109000000]: Range at scan->ranges[1407]: 0.388445
+[ INFO] [1658940985.517388797, 84.109000000]: Range at scan->ranges[1408]: 0.388443
+[ INFO] [1658940985.517397778, 84.109000000]: Range at scan->ranges[1409]: 0.386725
+[ INFO] [1658940985.517405155, 84.109000000]: Range at scan->ranges[1410]: 0.389717
+[ INFO] [1658940985.517414645, 84.109000000]: Range at scan->ranges[1411]: 0.389375
+[ INFO] [1658940985.517422754, 84.109000000]: Range at scan->ranges[1412]: 0.389207
+[ INFO] [1658940985.517431296, 84.109000000]: Range at scan->ranges[1413]: 0.388747
+[ INFO] [1658940985.517438453, 84.109000000]: Range at scan->ranges[1414]: 0.389339
+[ INFO] [1658940985.517488157, 84.109000000]: Range at scan->ranges[1415]: 0.387849
+[ INFO] [1658940985.517496214, 84.109000000]: Range at scan->ranges[1416]: 0.388843
+[ INFO] [1658940985.517503134, 84.109000000]: Range at scan->ranges[1417]: 0.389962
+[ INFO] [1658940985.517510111, 84.109000000]: Range at scan->ranges[1418]: 0.388771
+[ INFO] [1658940985.517517676, 84.109000000]: Range at scan->ranges[1419]: 0.388060
+[ INFO] [1658940985.517525291, 84.109000000]: Range at scan->ranges[1420]: 0.389619
+[ INFO] [1658940985.517532386, 84.109000000]: Range at scan->ranges[1421]: 0.390612
+[ INFO] [1658940985.517539235, 84.109000000]: Range at scan->ranges[1422]: 0.390805
+[ INFO] [1658940985.517558047, 84.109000000]: Range at scan->ranges[1423]: 0.392265
+[ INFO] [1658940985.517565033, 84.109000000]: Range at scan->ranges[1424]: 0.391662
+[ INFO] [1658940985.517572300, 84.109000000]: Range at scan->ranges[1425]: 0.390413
+[ INFO] [1658940985.517579252, 84.109000000]: Range at scan->ranges[1426]: 0.390811
+[ INFO] [1658940985.517586190, 84.109000000]: Range at scan->ranges[1427]: 0.390488
+[ INFO] [1658940985.517593738, 84.109000000]: Range at scan->ranges[1428]: 0.392088
+[ INFO] [1658940985.517600646, 84.109000000]: Range at scan->ranges[1429]: 0.393862
+[ INFO] [1658940985.517607738, 84.109000000]: Range at scan->ranges[1430]: 0.393761
+[ INFO] [1658940985.517614499, 84.109000000]: Range at scan->ranges[1431]: 0.393154
+[ INFO] [1658940985.517621428, 84.109000000]: Range at scan->ranges[1432]: 0.393216
+[ INFO] [1658940985.517628408, 84.109000000]: Range at scan->ranges[1433]: 0.394253
+[ INFO] [1658940985.517635507, 84.109000000]: Range at scan->ranges[1434]: 0.392856
+[ INFO] [1658940985.517642708, 84.109000000]: Range at scan->ranges[1435]: 0.394647
+[ INFO] [1658940985.517649887, 84.109000000]: Range at scan->ranges[1436]: 0.393482
+[ INFO] [1658940985.517656738, 84.109000000]: Range at scan->ranges[1437]: 0.393879
+[ INFO] [1658940985.517663607, 84.109000000]: Range at scan->ranges[1438]: 0.395090
+[ INFO] [1658940985.517671035, 84.109000000]: Range at scan->ranges[1439]: 0.394342
+[ INFO] [1658940985.517678349, 84.109000000]: Range at scan->ranges[1440]: 0.395673
+[ INFO] [1658940985.517684660, 84.109000000]: Range at scan->ranges[1441]: 0.395947
+[ INFO] [1658940985.517693247, 84.109000000]: Range at scan->ranges[1442]: 0.395963
+[ INFO] [1658940985.517700483, 84.109000000]: Range at scan->ranges[1443]: 0.395843
+[ INFO] [1658940985.517708238, 84.109000000]: Range at scan->ranges[1444]: 0.394499
+[ INFO] [1658940985.517804358, 84.109000000]: Range at scan->ranges[1445]: 0.395605
+[ INFO] [1658940985.517822906, 84.109000000]: Range at scan->ranges[1446]: 0.395482
+[ INFO] [1658940985.517831426, 84.109000000]: Range at scan->ranges[1447]: 0.398683
+[ INFO] [1658940985.517838214, 84.109000000]: Range at scan->ranges[1448]: 0.397193
+[ INFO] [1658940985.517847009, 84.109000000]: Range at scan->ranges[1449]: 0.397535
+[ INFO] [1658940985.517854098, 84.109000000]: Range at scan->ranges[1450]: 0.398392
+[ INFO] [1658940985.517860851, 84.109000000]: Range at scan->ranges[1451]: 0.398245
+[ INFO] [1658940985.517867604, 84.109000000]: Range at scan->ranges[1452]: 0.399895
+[ INFO] [1658940985.517874325, 84.109000000]: Range at scan->ranges[1453]: 0.397541
+[ INFO] [1658940985.517881493, 84.109000000]: Range at scan->ranges[1454]: 0.399361
+[ INFO] [1658940985.517956892, 84.109000000]: Range at scan->ranges[1455]: 0.400619
+[ INFO] [1658940985.517983221, 84.109000000]: Range at scan->ranges[1456]: 0.399922
+[ INFO] [1658940985.517990843, 84.109000000]: Range at scan->ranges[1457]: 0.400943
+[ INFO] [1658940985.517997746, 84.109000000]: Range at scan->ranges[1458]: 0.401315
+[ INFO] [1658940985.518004388, 84.109000000]: Range at scan->ranges[1459]: 0.401355
+[ INFO] [1658940985.518393399, 84.110000000]: Range at scan->ranges[1460]: 0.402090
+[ INFO] [1658940985.518405706, 84.110000000]: Range at scan->ranges[1461]: 0.403031
+[ INFO] [1658940985.518413350, 84.110000000]: Range at scan->ranges[1462]: 0.402612
+[ INFO] [1658940985.518420704, 84.110000000]: Range at scan->ranges[1463]: 0.401786
+[ INFO] [1658940985.518427803, 84.110000000]: Range at scan->ranges[1464]: 0.401924
+[ INFO] [1658940985.518434944, 84.110000000]: Range at scan->ranges[1465]: 0.403539
+[ INFO] [1658940985.518441790, 84.110000000]: Range at scan->ranges[1466]: 0.404895
+[ INFO] [1658940985.518448741, 84.110000000]: Range at scan->ranges[1467]: 0.405443
+[ INFO] [1658940985.518486741, 84.110000000]: Range at scan->ranges[1468]: 0.403535
+[ INFO] [1658940985.518495426, 84.110000000]: Range at scan->ranges[1469]: 0.403998
+[ INFO] [1658940985.518504352, 84.110000000]: Range at scan->ranges[1470]: 0.405783
+[ INFO] [1658940985.518511556, 84.110000000]: Range at scan->ranges[1471]: 0.406439
+[ INFO] [1658940985.518518738, 84.110000000]: Range at scan->ranges[1472]: 0.404989
+[ INFO] [1658940985.518526156, 84.110000000]: Range at scan->ranges[1473]: 0.405250
+[ INFO] [1658940985.518534924, 84.110000000]: Range at scan->ranges[1474]: 0.404947
+[ INFO] [1658940985.518542435, 84.110000000]: Range at scan->ranges[1475]: 0.405623
+[ INFO] [1658940985.518549433, 84.110000000]: Range at scan->ranges[1476]: 0.406740
+[ INFO] [1658940985.518558278, 84.110000000]: Range at scan->ranges[1477]: 0.406708
+[ INFO] [1658940985.518565357, 84.110000000]: Range at scan->ranges[1478]: 0.408376
+[ INFO] [1658940985.518572309, 84.110000000]: Range at scan->ranges[1479]: 0.406898
+[ INFO] [1658940985.518581174, 84.110000000]: Range at scan->ranges[1480]: 0.409050
+[ INFO] [1658940985.518588106, 84.110000000]: Range at scan->ranges[1481]: 0.407683
+[ INFO] [1658940985.518595454, 84.110000000]: Range at scan->ranges[1482]: 0.409901
+[ INFO] [1658940985.518614417, 84.110000000]: Range at scan->ranges[1483]: 0.408939
+[ INFO] [1658940985.518623622, 84.110000000]: Range at scan->ranges[1484]: 0.410754
+[ INFO] [1658940985.518631021, 84.110000000]: Range at scan->ranges[1485]: 0.411090
+[ INFO] [1658940985.518638018, 84.110000000]: Range at scan->ranges[1486]: 0.411339
+[ INFO] [1658940985.518646971, 84.110000000]: Range at scan->ranges[1487]: 0.412231
+[ INFO] [1658940985.518654087, 84.110000000]: Range at scan->ranges[1488]: 0.411276
+[ INFO] [1658940985.518662017, 84.110000000]: Range at scan->ranges[1489]: 0.411516
+[ INFO] [1658940985.518668915, 84.110000000]: Range at scan->ranges[1490]: 0.413971
+[ INFO] [1658940985.518676320, 84.110000000]: Range at scan->ranges[1491]: 0.415703
+[ INFO] [1658940985.518683199, 84.110000000]: Range at scan->ranges[1492]: 0.414153
+[ INFO] [1658940985.518690352, 84.110000000]: Range at scan->ranges[1493]: 0.415548
+[ INFO] [1658940985.518697306, 84.110000000]: Range at scan->ranges[1494]: 0.415894
+[ INFO] [1658940985.518705285, 84.110000000]: Range at scan->ranges[1495]: 0.415428
+[ INFO] [1658940985.518714654, 84.110000000]: Range at scan->ranges[1496]: 0.417551
+[ INFO] [1658940985.518721704, 84.110000000]: Range at scan->ranges[1497]: 0.417279
+[ INFO] [1658940985.518728530, 84.110000000]: Range at scan->ranges[1498]: 0.417680
+[ INFO] [1658940985.518735434, 84.110000000]: Range at scan->ranges[1499]: 0.419384
+[ INFO] [1658940985.518742732, 84.110000000]: Range at scan->ranges[1500]: 0.418297
+[ INFO] [1658940985.518749716, 84.110000000]: Range at scan->ranges[1501]: 0.420574
+[ INFO] [1658940985.518756783, 84.110000000]: Range at scan->ranges[1502]: 0.419367
+[ INFO] [1658940985.518765901, 84.110000000]: Range at scan->ranges[1503]: 0.421984
+[ INFO] [1658940985.518772896, 84.110000000]: Range at scan->ranges[1504]: 0.422154
+[ INFO] [1658940985.518779922, 84.110000000]: Range at scan->ranges[1505]: 0.422606
+[ INFO] [1658940985.518786890, 84.110000000]: Range at scan->ranges[1506]: 0.422449
+[ INFO] [1658940985.518794540, 84.110000000]: Range at scan->ranges[1507]: 0.420962
+[ INFO] [1658940985.518801589, 84.110000000]: Range at scan->ranges[1508]: 0.424108
+[ INFO] [1658940985.518829689, 84.110000000]: Range at scan->ranges[1509]: 0.421899
+[ INFO] [1658940985.518838707, 84.110000000]: Range at scan->ranges[1510]: 0.424062
+[ INFO] [1658940985.518845784, 84.110000000]: Range at scan->ranges[1511]: 0.423397
+[ INFO] [1658940985.518852830, 84.110000000]: Range at scan->ranges[1512]: 0.427695
+[ INFO] [1658940985.518860001, 84.110000000]: Range at scan->ranges[1513]: 0.426027
+[ INFO] [1658940985.518867216, 84.110000000]: Range at scan->ranges[1514]: 0.425723
+[ INFO] [1658940985.518882029, 84.110000000]: Range at scan->ranges[1515]: 0.426938
+[ INFO] [1658940985.518889336, 84.110000000]: Range at scan->ranges[1516]: 0.428460
+[ INFO] [1658940985.518896712, 84.110000000]: Range at scan->ranges[1517]: 0.428187
+[ INFO] [1658940985.518904322, 84.110000000]: Range at scan->ranges[1518]: 0.427546
+[ INFO] [1658940985.518911491, 84.110000000]: Range at scan->ranges[1519]: 0.430963
+[ INFO] [1658940985.518918532, 84.110000000]: Range at scan->ranges[1520]: 0.429646
+[ INFO] [1658940985.518925372, 84.110000000]: Range at scan->ranges[1521]: 0.428313
+[ INFO] [1658940985.518932191, 84.110000000]: Range at scan->ranges[1522]: 0.431241
+[ INFO] [1658940985.518939087, 84.110000000]: Range at scan->ranges[1523]: 0.433267
+[ INFO] [1658940985.518946239, 84.110000000]: Range at scan->ranges[1524]: 0.434108
+[ INFO] [1658940985.518953468, 84.110000000]: Range at scan->ranges[1525]: 0.433329
+[ INFO] [1658940985.518960303, 84.110000000]: Range at scan->ranges[1526]: 0.436387
+[ INFO] [1658940985.518967097, 84.110000000]: Range at scan->ranges[1527]: 0.436372
+[ INFO] [1658940985.518973922, 84.110000000]: Range at scan->ranges[1528]: 0.437083
+[ INFO] [1658940985.518980789, 84.110000000]: Range at scan->ranges[1529]: 0.437083
+[ INFO] [1658940985.518987712, 84.110000000]: Range at scan->ranges[1530]: 0.436531
+[ INFO] [1658940985.518994906, 84.110000000]: Range at scan->ranges[1531]: 0.437915
+[ INFO] [1658940985.519001609, 84.110000000]: Range at scan->ranges[1532]: 0.438277
+[ INFO] [1658940985.519008620, 84.110000000]: Range at scan->ranges[1533]: 0.439266
+[ INFO] [1658940985.519015408, 84.110000000]: Range at scan->ranges[1534]: 0.440369
+[ INFO] [1658940985.519022271, 84.110000000]: Range at scan->ranges[1535]: 0.441591
+[ INFO] [1658940985.519029543, 84.110000000]: Range at scan->ranges[1536]: 0.443158
+[ INFO] [1658940985.519036463, 84.110000000]: Range at scan->ranges[1537]: 0.440670
+[ INFO] [1658940985.519043413, 84.110000000]: Range at scan->ranges[1538]: 0.444298
+[ INFO] [1658940985.519050328, 84.110000000]: Range at scan->ranges[1539]: 0.443340
+
+LEFT SIDE
+[ INFO] [1658944579.361511552, 255.562000000]: Range at scan->ranges[0]: 0.405095
+[ INFO] [1658944579.361541083, 255.562000000]: Range at scan->ranges[1]: 0.403849
+[ INFO] [1658944579.361550710, 255.562000000]: Range at scan->ranges[2]: 0.404728
+[ INFO] [1658944579.361558389, 255.562000000]: Range at scan->ranges[3]: 0.404776
+[ INFO] [1658944579.361577614, 255.562000000]: Range at scan->ranges[4]: 0.404225
+[ INFO] [1658944579.361583849, 255.562000000]: Range at scan->ranges[5]: 0.407390
+[ INFO] [1658944579.361602608, 255.562000000]: Range at scan->ranges[6]: 0.406449
+[ INFO] [1658944579.361609423, 255.562000000]: Range at scan->ranges[7]: 0.406458
+[ INFO] [1658944579.361616033, 255.562000000]: Range at scan->ranges[8]: 0.410503
+[ INFO] [1658944579.361622767, 255.562000000]: Range at scan->ranges[9]: 0.409702
+[ INFO] [1658944579.361629296, 255.562000000]: Range at scan->ranges[10]: 0.410578
+[ INFO] [1658944579.361636015, 255.562000000]: Range at scan->ranges[11]: 0.413127
+[ INFO] [1658944579.361642694, 255.562000000]: Range at scan->ranges[12]: 0.413124
+[ INFO] [1658944579.361649165, 255.562000000]: Range at scan->ranges[13]: 0.414246
+[ INFO] [1658944579.361655905, 255.562000000]: Range at scan->ranges[14]: 0.415915
+[ INFO] [1658944579.361662496, 255.562000000]: Range at scan->ranges[15]: 0.416369
+[ INFO] [1658944579.361669053, 255.562000000]: Range at scan->ranges[16]: 0.417345
+[ INFO] [1658944579.361675738, 255.562000000]: Range at scan->ranges[17]: 0.417315
+[ INFO] [1658944579.361682425, 255.562000000]: Range at scan->ranges[18]: 0.418855
+[ INFO] [1658944579.361689083, 255.562000000]: Range at scan->ranges[19]: 0.420154
+[ INFO] [1658944579.361695754, 255.562000000]: Range at scan->ranges[20]: 0.423422
+[ INFO] [1658944579.361702287, 255.562000000]: Range at scan->ranges[21]: 0.421594
+[ INFO] [1658944579.361708902, 255.562000000]: Range at scan->ranges[22]: 0.424288
+[ INFO] [1658944579.361715465, 255.562000000]: Range at scan->ranges[23]: 0.426164
+[ INFO] [1658944579.361721970, 255.562000000]: Range at scan->ranges[24]: 0.426144
+[ INFO] [1658944579.361728450, 255.562000000]: Range at scan->ranges[25]: 0.428595
+[ INFO] [1658944579.361735220, 255.562000000]: Range at scan->ranges[26]: 0.430278
+[ INFO] [1658944579.361741627, 255.562000000]: Range at scan->ranges[27]: 0.429750
+[ INFO] [1658944579.361748276, 255.562000000]: Range at scan->ranges[28]: 0.430298
+[ INFO] [1658944579.361754679, 255.562000000]: Range at scan->ranges[29]: 0.431965
+[ INFO] [1658944579.361761266, 255.562000000]: Range at scan->ranges[30]: 0.433014
+[ INFO] [1658944579.361767719, 255.562000000]: Range at scan->ranges[31]: 0.433577
+[ INFO] [1658944579.361774405, 255.562000000]: Range at scan->ranges[32]: 0.436177
+[ INFO] [1658944579.361781070, 255.562000000]: Range at scan->ranges[33]: 0.434919
+[ INFO] [1658944579.361787674, 255.562000000]: Range at scan->ranges[34]: 0.439291
+[ INFO] [1658944579.361794367, 255.562000000]: Range at scan->ranges[35]: 0.438373
+[ INFO] [1658944579.361807507, 255.562000000]: Range at scan->ranges[36]: 0.439801
+[ INFO] [1658944579.361814252, 255.562000000]: Range at scan->ranges[37]: 0.443946
+[ INFO] [1658944579.361820928, 255.562000000]: Range at scan->ranges[38]: 0.443741
+[ INFO] [1658944579.361827344, 255.562000000]: Range at scan->ranges[39]: 0.444696
+[ INFO] [1658944579.361833780, 255.562000000]: Range at scan->ranges[40]: 0.445054
+[ INFO] [1658944579.361840428, 255.562000000]: Range at scan->ranges[41]: 0.446959
+[ INFO] [1658944579.361846851, 255.562000000]: Range at scan->ranges[42]: 0.448238
+[ INFO] [1658944579.361853359, 255.562000000]: Range at scan->ranges[43]: 0.451233
+[ INFO] [1658944579.361859903, 255.562000000]: Range at scan->ranges[44]: 0.451623
+[ INFO] [1658944579.361866359, 255.562000000]: Range at scan->ranges[45]: 0.450345
+[ INFO] [1658944579.361872842, 255.562000000]: Range at scan->ranges[46]: 0.455286
+[ INFO] [1658944445.845403034, 188.209000000]: Range at scan->ranges[1825]: 0.353489
+[ INFO] [1658944445.845410225, 188.209000000]: Range at scan->ranges[1826]: 0.354355
+[ INFO] [1658944445.845417824, 188.209000000]: Range at scan->ranges[1827]: 0.354136
+[ INFO] [1658944445.845424757, 188.209000000]: Range at scan->ranges[1828]: 0.354849
+[ INFO] [1658944445.845431774, 188.209000000]: Range at scan->ranges[1829]: 0.352621
+[ INFO] [1658944445.845438728, 188.209000000]: Range at scan->ranges[1830]: 0.352163
+[ INFO] [1658944445.845445744, 188.209000000]: Range at scan->ranges[1831]: 0.352821
+[ INFO] [1658944445.845453788, 188.209000000]: Range at scan->ranges[1832]: 0.351586
+[ INFO] [1658944445.845462950, 188.209000000]: Range at scan->ranges[1833]: 0.352161
+[ INFO] [1658944445.845470704, 188.209000000]: Range at scan->ranges[1834]: 0.353218
+[ INFO] [1658944445.845477986, 188.209000000]: Range at scan->ranges[1835]: 0.353126
+[ INFO] [1658944445.845484999, 188.209000000]: Range at scan->ranges[1836]: 0.351310
+[ INFO] [1658944445.845492103, 188.209000000]: Range at scan->ranges[1837]: 0.352319
+[ INFO] [1658944445.845498978, 188.209000000]: Range at scan->ranges[1838]: 0.353069
+[ INFO] [1658944445.845506090, 188.209000000]: Range at scan->ranges[1839]: 0.351197
+[ INFO] [1658944445.845513016, 188.209000000]: Range at scan->ranges[1840]: 0.351763
+[ INFO] [1658944445.845520172, 188.209000000]: Range at scan->ranges[1841]: 0.349943
+[ INFO] [1658944445.845529081, 188.209000000]: Range at scan->ranges[1842]: 0.351867
+[ INFO] [1658944445.845536529, 188.209000000]: Range at scan->ranges[1843]: 0.351954
+[ INFO] [1658944445.845543863, 188.209000000]: Range at scan->ranges[1844]: 0.350080
+[ INFO] [1658944445.845555821, 188.209000000]: Range at scan->ranges[1845]: 0.349397
+[ INFO] [1658944445.845565298, 188.209000000]: Range at scan->ranges[1846]: 0.352448
+[ INFO] [1658944445.845572590, 188.209000000]: Range at scan->ranges[1847]: 0.352238
+[ INFO] [1658944445.845581751, 188.209000000]: Range at scan->ranges[1848]: 0.350235
+[ INFO] [1658944445.845589089, 188.209000000]: Range at scan->ranges[1849]: 0.353300
+[ INFO] [1658944445.845597917, 188.209000000]: Range at scan->ranges[1850]: 0.349709
+[ INFO] [1658944445.845605306, 188.209000000]: Range at scan->ranges[1851]: 0.349282
+[ INFO] [1658944445.845612491, 188.209000000]: Range at scan->ranges[1852]: 0.351781
+[ INFO] [1658944445.845621557, 188.209000000]: Range at scan->ranges[1853]: 0.350411
+[ INFO] [1658944445.845628950, 188.209000000]: Range at scan->ranges[1854]: 0.351772
+[ INFO] [1658944445.845636224, 188.209000000]: Range at scan->ranges[1855]: 0.349459
+[ INFO] [1658944445.845643246, 188.209000000]: Range at scan->ranges[1856]: 0.348150
+[ INFO] [1658944445.845651392, 188.209000000]: Range at scan->ranges[1857]: 0.348583
+[ INFO] [1658944445.845658413, 188.209000000]: Range at scan->ranges[1858]: 0.349636
+[ INFO] [1658944445.845665604, 188.209000000]: Range at scan->ranges[1859]: 0.349720
+[ INFO] [1658944445.845672535, 188.209000000]: Range at scan->ranges[1860]: 0.348357
+[ INFO] [1658944445.845679477, 188.209000000]: Range at scan->ranges[1861]: 0.352167
+[ INFO] [1658944445.845686685, 188.209000000]: Range at scan->ranges[1862]: 0.349607
+[ INFO] [1658944445.845695947, 188.209000000]: Range at scan->ranges[1863]: 0.348260
+[ INFO] [1658944445.845703174, 188.209000000]: Range at scan->ranges[1864]: 0.350645
+[ INFO] [1658944445.845710297, 188.209000000]: Range at scan->ranges[1865]: 0.348277
+[ INFO] [1658944445.845717672, 188.209000000]: Range at scan->ranges[1866]: 0.349964
+[ INFO] [1658944445.845724813, 188.209000000]: Range at scan->ranges[1867]: 0.349931
+[ INFO] [1658944445.845731862, 188.209000000]: Range at scan->ranges[1868]: 0.350698
+[ INFO] [1658944445.845840291, 188.209000000]: Range at scan->ranges[1869]: 0.349210
+[ INFO] [1658944445.845852363, 188.209000000]: Range at scan->ranges[1870]: 0.349970
+[ INFO] [1658944445.845860436, 188.209000000]: Range at scan->ranges[1871]: 0.350911
+[ INFO] [1658944445.845867787, 188.209000000]: Range at scan->ranges[1872]: 0.351317
+[ INFO] [1658944445.845875156, 188.209000000]: Range at scan->ranges[1873]: 0.349764
+[ INFO] [1658944445.845882608, 188.209000000]: Range at scan->ranges[1874]: 0.348780
+[ INFO] [1658944445.845890093, 188.209000000]: Range at scan->ranges[1875]: 0.348672
+[ INFO] [1658944445.845897474, 188.209000000]: Range at scan->ranges[1876]: 0.349215
+[ INFO] [1658944445.845905333, 188.209000000]: Range at scan->ranges[1877]: 0.349909
+[ INFO] [1658944445.845912715, 188.209000000]: Range at scan->ranges[1878]: 0.349247
+[ INFO] [1658944445.845920026, 188.209000000]: Range at scan->ranges[1879]: 0.350908
+[ INFO] [1658944445.845927319, 188.209000000]: Range at scan->ranges[1880]: 0.348037
+[ INFO] [1658944445.845934459, 188.209000000]: Range at scan->ranges[1881]: 0.348003
+[ INFO] [1658944445.845942247, 188.209000000]: Range at scan->ranges[1882]: 0.350320
+[ INFO] [1658944445.845950018, 188.209000000]: Range at scan->ranges[1883]: 0.348802
+[ INFO] [1658944445.845957405, 188.209000000]: Range at scan->ranges[1884]: 0.350045
+[ INFO] [1658944445.845967683, 188.209000000]: Range at scan->ranges[1885]: 0.349140
+[ INFO] [1658944445.845975240, 188.209000000]: Range at scan->ranges[1886]: 0.348298
+[ INFO] [1658944445.845982628, 188.209000000]: Range at scan->ranges[1887]: 0.351375
+[ INFO] [1658944445.846004662, 188.209000000]: Range at scan->ranges[1888]: 0.349436
+[ INFO] [1658944445.846014452, 188.209000000]: Range at scan->ranges[1889]: 0.349651
+[ INFO] [1658944445.846022479, 188.209000000]: Range at scan->ranges[1890]: 0.349405
+[ INFO] [1658944445.846030069, 188.209000000]: Range at scan->ranges[1891]: 0.350207
+[ INFO] [1658944445.846067342, 188.209000000]: Range at scan->ranges[1892]: 0.348856
+[ INFO] [1658944445.846079739, 188.209000000]: Range at scan->ranges[1893]: 0.348724
+[ INFO] [1658944445.846087689, 188.209000000]: Range at scan->ranges[1894]: 0.348752
+[ INFO] [1658944445.846094838, 188.209000000]: Range at scan->ranges[1895]: 0.349792
+[ INFO] [1658944445.846102015, 188.209000000]: Range at scan->ranges[1896]: 0.349511
+[ INFO] [1658944445.846117742, 188.209000000]: Range at scan->ranges[1897]: 0.348330
+[ INFO] [1658944445.846125009, 188.209000000]: Range at scan->ranges[1898]: 0.350903
+[ INFO] [1658944445.846144838, 188.209000000]: Range at scan->ranges[1899]: 0.347006
+[ INFO] [1658944445.846154296, 188.209000000]: Range at scan->ranges[1900]: 0.351216
+[ INFO] [1658944445.846163889, 188.209000000]: Range at scan->ranges[1901]: 0.350295
+[ INFO] [1658944445.846171319, 188.209000000]: Range at scan->ranges[1902]: 0.351638
+[ INFO] [1658944445.846178645, 188.209000000]: Range at scan->ranges[1903]: 0.350487
+[ INFO] [1658944445.846186321, 188.210000000]: Range at scan->ranges[1904]: 0.349589
+[ INFO] [1658944445.846193581, 188.210000000]: Range at scan->ranges[1905]: 0.351661
+[ INFO] [1658944445.846200673, 188.210000000]: Range at scan->ranges[1906]: 0.350359
+[ INFO] [1658944445.846208101, 188.210000000]: Range at scan->ranges[1907]: 0.350400
+[ INFO] [1658944445.846216400, 188.210000000]: Range at scan->ranges[1908]: 0.351961
+[ INFO] [1658944445.846225525, 188.210000000]: Range at scan->ranges[1909]: 0.349598
+[ INFO] [1658944445.846232908, 188.210000000]: Range at scan->ranges[1910]: 0.352304
+[ INFO] [1658944445.846240533, 188.210000000]: Range at scan->ranges[1911]: 0.350151
+[ INFO] [1658944445.846247833, 188.210000000]: Range at scan->ranges[1912]: 0.350601
+[ INFO] [1658944445.846256769, 188.210000000]: Range at scan->ranges[1913]: 0.351667
+[ INFO] [1658944445.846264344, 188.210000000]: Range at scan->ranges[1914]: 0.350781
+[ INFO] [1658944445.846271732, 188.210000000]: Range at scan->ranges[1915]: 0.351429
+[ INFO] [1658944445.846280764, 188.210000000]: Range at scan->ranges[1916]: 0.351622
+[ INFO] [1658944445.846288179, 188.210000000]: Range at scan->ranges[1917]: 0.351534
+[ INFO] [1658944445.846298280, 188.210000000]: Range at scan->ranges[1918]: 0.350821
+[ INFO] [1658944445.846305503, 188.210000000]: Range at scan->ranges[1919]: 0.349289
+[ INFO] [1658944445.846312741, 188.210000000]: Range at scan->ranges[1920]: 0.352326
+[ INFO] [1658944445.846319657, 188.210000000]: Range at scan->ranges[1921]: 0.351245
+[ INFO] [1658944445.846326873, 188.210000000]: Range at scan->ranges[1922]: 0.353188
+[ INFO] [1658944445.846333937, 188.210000000]: Range at scan->ranges[1923]: 0.353290
+[ INFO] [1658944445.846341038, 188.210000000]: Range at scan->ranges[1924]: 0.353070
+[ INFO] [1658944445.846348139, 188.210000000]: Range at scan->ranges[1925]: 0.351787
+[ INFO] [1658944445.846355842, 188.210000000]: Range at scan->ranges[1926]: 0.351431
+[ INFO] [1658944445.846362807, 188.210000000]: Range at scan->ranges[1927]: 0.352966
+[ INFO] [1658944445.846369690, 188.210000000]: Range at scan->ranges[1928]: 0.353473
+[ INFO] [1658944445.846384896, 188.210000000]: Range at scan->ranges[1929]: 0.353241
+[ INFO] [1658944445.846392881, 188.210000000]: Range at scan->ranges[1930]: 0.353040
+[ INFO] [1658944445.846400254, 188.210000000]: Range at scan->ranges[1931]: 0.352841
+[ INFO] [1658944445.846407373, 188.210000000]: Range at scan->ranges[1932]: 0.353779
+[ INFO] [1658944445.846414129, 188.210000000]: Range at scan->ranges[1933]: 0.353471
+[ INFO] [1658944445.851958215, 188.212000000]: Range at scan->ranges[1934]: 0.353384
+[ INFO] [1658944445.851979708, 188.212000000]: Range at scan->ranges[1935]: 0.352554
+[ INFO] [1658944445.851988438, 188.212000000]: Range at scan->ranges[1936]: 0.353519
+[ INFO] [1658944445.851995699, 188.212000000]: Range at scan->ranges[1937]: 0.352787
+[ INFO] [1658944445.852003182, 188.212000000]: Range at scan->ranges[1938]: 0.355472
+[ INFO] [1658944445.852011839, 188.212000000]: Range at scan->ranges[1939]: 0.355317
+[ INFO] [1658944445.852019009, 188.212000000]: Range at scan->ranges[1940]: 0.353362
+[ INFO] [1658944445.852026097, 188.212000000]: Range at scan->ranges[1941]: 0.354908
+[ INFO] [1658944445.852034274, 188.212000000]: Range at scan->ranges[1942]: 0.354459
+[ INFO] [1658944445.852041623, 188.212000000]: Range at scan->ranges[1943]: 0.353723
+[ INFO] [1658944445.852048947, 188.212000000]: Range at scan->ranges[1944]: 0.355466
+[ INFO] [1658944445.852299904, 188.212000000]: Range at scan->ranges[1945]: 0.355385
+[ INFO] [1658944445.852369803, 188.212000000]: Range at scan->ranges[1946]: 0.355745
+[ INFO] [1658944445.852379051, 188.212000000]: Range at scan->ranges[1947]: 0.357955
+[ INFO] [1658944445.852386411, 188.212000000]: Range at scan->ranges[1948]: 0.355075
+[ INFO] [1658944445.852393782, 188.212000000]: Range at scan->ranges[1949]: 0.355223
+[ INFO] [1658944445.852400812, 188.212000000]: Range at scan->ranges[1950]: 0.357949
+[ INFO] [1658944445.852408035, 188.212000000]: Range at scan->ranges[1951]: 0.358593
+[ INFO] [1658944445.852415130, 188.212000000]: Range at scan->ranges[1952]: 0.357112
+[ INFO] [1658944445.852423110, 188.212000000]: Range at scan->ranges[1953]: 0.356580
+[ INFO] [1658944445.852721402, 188.213000000]: Range at scan->ranges[1954]: 0.357891
+[ INFO] [1658944445.852734370, 188.213000000]: Range at scan->ranges[1955]: 0.358391
+[ INFO] [1658944445.852742123, 188.213000000]: Range at scan->ranges[1956]: 0.358790
+[ INFO] [1658944445.852768575, 188.213000000]: Range at scan->ranges[1957]: 0.358965
+[ INFO] [1658944445.852777998, 188.213000000]: Range at scan->ranges[1958]: 0.360030
+[ INFO] [1658944445.852785463, 188.213000000]: Range at scan->ranges[1959]: 0.358378
+[ INFO] [1658944445.852794840, 188.213000000]: Range at scan->ranges[1960]: 0.359136
+[ INFO] [1658944445.852802189, 188.213000000]: Range at scan->ranges[1961]: 0.359021
+[ INFO] [1658944445.852809279, 188.213000000]: Range at scan->ranges[1962]: 0.360008
+[ INFO] [1658944445.852817044, 188.213000000]: Range at scan->ranges[1963]: 0.359482
+[ INFO] [1658944445.852824251, 188.213000000]: Range at scan->ranges[1964]: 0.360743
+[ INFO] [1658944445.852842963, 188.213000000]: Range at scan->ranges[1965]: 0.360560
+[ INFO] [1658944445.852850946, 188.213000000]: Range at scan->ranges[1966]: 0.360736
+[ INFO] [1658944445.852858075, 188.213000000]: Range at scan->ranges[1967]: 0.361462
+[ INFO] [1658944445.852865070, 188.213000000]: Range at scan->ranges[1968]: 0.358497
+[ INFO] [1658944445.852871955, 188.213000000]: Range at scan->ranges[1969]: 0.364019
+[ INFO] [1658944445.852878756, 188.213000000]: Range at scan->ranges[1970]: 0.363782
+[ INFO] [1658944445.852886321, 188.213000000]: Range at scan->ranges[1971]: 0.361202
+[ INFO] [1658944445.852893437, 188.213000000]: Range at scan->ranges[1972]: 0.360901
+[ INFO] [1658944445.852902659, 188.213000000]: Range at scan->ranges[1973]: 0.361738
+[ INFO] [1658944445.852910388, 188.213000000]: Range at scan->ranges[1974]: 0.362828
+[ INFO] [1658944445.852917668, 188.213000000]: Range at scan->ranges[1975]: 0.363545
+[ INFO] [1658944445.852924764, 188.213000000]: Range at scan->ranges[1976]: 0.364618
+BACK
+
+DECISIONS
+If no walls, forward
+BACK
+If wall on back, forward
+If wall on back & right, forward
+If wall on back & left, turn right, then forward
+If wall on back and front, turn right, then forward
+RIGHT
+If wall on right, forward
+If wall on right & left, forward
+If wall on right & front, turn left
+If wall on right & back, forward
+LEFT 
+If wall on left, turn 180
+If wall on front & left, turn 180
+FRONT
+If wall front, turn left
+*/

@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="nate_stretch_movement" type="corner_finder_node" name="Corner_Finder_Node" output="screen">
+        <rosparam file="$(find nate_stretch_movement)/params/right_wall_hugger_params.yaml" command="load"/>
+    </node>
+</launch>

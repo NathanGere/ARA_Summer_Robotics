@@ -156,6 +156,11 @@ add_executable(explorer_node src/explorer.cpp)
 add_executable(crash_recovery_node src/crash_recovery.cpp)
 add_executable(wall_identifier_node src/wall_identifier.cpp)
 add_executable(type_of_wall_identifier_node src/type_of_wall_identifier.cpp)
+add_executable(corner_finder_node src/corner_finder.cpp)
+add_executable(corner_calculator_node src/corner_calculator.cpp)
+add_executable(turn_optimizer_node src/turn_optimizer.cpp)
+add_executable(wall_avoider_node src/wall_avoider.cpp)
+add_executable(crash_recovery_v2_node src/crash_recovery_v2.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -178,6 +183,11 @@ add_dependencies(explorer_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 add_dependencies(crash_recovery_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(wall_identifier_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(type_of_wall_identifier_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(corner_finder_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(corner_calculator_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(turn_optimizer_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(wall_avoider_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(crash_recovery_v2_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(object_avoidance_node
@@ -217,6 +227,21 @@ target_link_libraries(wall_identifier_node
    ${catkin_LIBRARIES}
 )
 target_link_libraries(type_of_wall_identifier_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(corner_finder_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(corner_calculator_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(turn_optimizer_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(wall_avoider_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(crash_recovery_v2_node
    ${catkin_LIBRARIES}
 )
 

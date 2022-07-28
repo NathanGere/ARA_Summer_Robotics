@@ -25,7 +25,8 @@ void type_of_wall_identifier(const sensor_msgs::LaserScan::ConstPtr &scan)
     int num_of_walls = 0;
     int wall_starting_positions[100];
     int wall_ending_positions[100];
-    std::string wall_type[2000];
+    
+    int wall_type[2000];
     
     //will loop to check all indices of the laser scan
     while (i < size)
@@ -58,7 +59,6 @@ void type_of_wall_identifier(const sensor_msgs::LaserScan::ConstPtr &scan)
                     wall_ending_positions[num_of_walls] = i;
                 }
                 ROS_INFO("\nThere is a wall at index 0");
-                wall_type[i] = "wall";
                 
             }
             else if(i == 1999) //if last index
@@ -70,7 +70,6 @@ void type_of_wall_identifier(const sensor_msgs::LaserScan::ConstPtr &scan)
                     num_of_walls++;
                 }
                 ROS_INFO("\nThere is a wall at index 1999");
-                wall_type[i] = "wall";
             }
             else //if any middle indexes
             {
@@ -83,6 +82,18 @@ void type_of_wall_identifier(const sensor_msgs::LaserScan::ConstPtr &scan)
                 {
                     wb = 1;
                 }
+                if(indices_of_walls[i-1] != 0 && distances_of_walls[i-1] + 0.2 < distances_of_walls[i])
+                {   
+                    num_of_walls++;
+                    wall_ending_positions[num_of_walls-1] = i-1; 
+                    wall_starting_positions[num_of_walls] = i;
+                } 
+                if(indices_of_walls[i-1] != 0 && distances_of_walls[i-1] - 0.2 > distances_of_walls[i]) 
+                {   
+                    num_of_walls++;
+                    wall_ending_positions[num_of_walls-1] = i-1; 
+                    wall_starting_positions[num_of_walls] = i;
+                }
                 if(indices_of_walls[i+1] == 0) //check if wall is continuous after
                 {
                     wall_ending_positions[num_of_walls] = i;
@@ -91,8 +102,6 @@ void type_of_wall_identifier(const sensor_msgs::LaserScan::ConstPtr &scan)
                 {
                     wa = 2;
                 }
-
-                ROS_INFO("\nThere is a wall at index %d", i);
             }
 
             int wall_calc = wb + wa;
@@ -118,57 +127,65 @@ void type_of_wall_identifier(const sensor_msgs::LaserScan::ConstPtr &scan)
             {   
                 //both wall before and wall after are farther away then current wall
                 case 0: //must be an outside corner or the closest part of a curve
-                    wall_type[i] = "outside corner\0";
+                    wall_type[i] = 2; //outside corner
                     break;
                 //wall before is less
                 case 1: //must be a straight wall or curve
                     if((slope_a < slope_b + 0.05) && (slope_a > slope_b - 0.05)) 
                     {
-                        wall_type[i] = "straight\0";
+                        wall_type[i] = 3; //straight
                     }
                     else 
                     {
-                        wall_type[i] = "curved\0";
+                        wall_type[i] = 4; //curved
                     }
-                    ROS_INFO("UWU\n\n\n\n\n");
                     break;
                 //wall after is less
                 case 2: //must be a straight wall or curve
                     if((slope_a < slope_b + 0.05) && (slope_a > slope_b - 0.05)) 
                     {
-                        wall_type[i] = "straight\0";
+                        wall_type[i] = 3;
                     }
                     else 
                     {
-                        wall_type[i] = "curved\0";
+                        wall_type[i] = 4;
                     }
-                    ROS_INFO("OWO\n\n\n\n\n");
                     break;
                 //both wall before and after are closer than current wall
                 case 3: 
-                    wall_type[i] = "inside corner\0";
+                    wall_type[i] = 5; //inside corner
                     break;
             }
         }
         else
         {
-            wall_type[i] = "no wall\0";
+            wall_type[i] = 1; //no wall
         }
         
-        if(wall_type[i] == "no wall\0")
+        if(wall_type[i] == 1)
         {
             ROS_INFO("\nThere is no wall at scan->ranges[%d]", i);
         }
-        else if(wall_type[i] == "outside corner\0" || wall_type[i] == "inside corner\0")
+        else if(wall_type[i] == 2)
         {
-            ROS_INFO("\nThere is a %s, at scan->ranges[%d]", wall_type[i], i);
+            ROS_INFO("\nThere is an outside corner at scan->ranges[%d]", i);
         }
-        /*
+        else if(wall_type[i] == 3)
+        {
+            ROS_INFO("\nThere is a straight wall at scan->ranges[%d]", i);
+        }
+        else if(wall_type[i] == 4)
+        {
+            ROS_INFO("\nThere is a curved wall at scan->ranges[%d]", i);
+        }
+        else if(wall_type[i] == 5)
+        {
+            ROS_INFO("\nThere is an inside corner at scan->ranges[%d]", i);
+        }
         else
         {
-            ROS_INFO("\nThere is a %s wall at scan->ranges[%d]", wall_type[i], i);
+            ROS_INFO("\nThe wall type at scan->ranges[%d] is unknown.", i);
         }
-        */
         i++;
     }
 
