@@ -62,7 +62,7 @@ void explorer(const sensor_msgs::LaserScan::ConstPtr &scan)
         {
             //publishing forward speed
             motorizer.linear.x = 1.5;
-            motorizer.angular.z = -0.1;
+            motorizer.angular.z = -0.3;
             pub.publish(motorizer);
             ROS_INFO("Exploring . . .");
         }

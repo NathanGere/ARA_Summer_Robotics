@@ -6,7 +6,14 @@
 ros::Publisher pub;
 ros::Subscriber sub;
 
-//global variable for tracking if the robot needs to explore
+//params
+std::string laser_scan;
+std::string cmd_vel_output;
+
+//wall variables
+bool wall_on_left;
+bool wall_on_right;
+bool wall_in_front;
 bool crashed;
 int index_mem;
 float distance_mem;
@@ -19,20 +26,51 @@ int case_13_tracker;
 int case_14_tracker;
 int case_15_tracker;
 
-//params
-std::string laser_scan;
-std::string cmd_vel_output;
-
-void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
-{   
+void wall_avoider(const sensor_msgs::LaserScan::ConstPtr &scan)
+{
     //number of indices in laser scan array
     int size = scan->ranges.size();
 
-    //loop iteration variable
-    int i = 0;
-    //tracker for nearby walls
+    //geo msg to be published
+    geometry_msgs::Twist motorizer;
+
+    //set variables at start
+    wall_on_left = false;
+    wall_on_right = false;
+    wall_in_front = false;
     crashed = false;
 
+    //will calculate which sides of the robot there are walls on
+    int i = 0;
+    while(i < 47)
+    {
+        if(scan->ranges[i] < 0.55) wall_on_left = true;
+        i++;
+    }
+
+    i = 824;
+    while(i < 877)
+    {
+        if(scan->ranges[i] < 0.55) wall_on_right = true;
+        i++;
+    }
+
+    i = 1139;
+    while(i < 1600)
+    {
+        if(scan->ranges[i] < 0.55) wall_in_front = true;
+        i++;
+    }
+
+    i = 1825;
+    while(i < 1977)
+    {
+        if(scan->ranges[i] < 0.55) wall_on_left = true;
+        i++;
+    }
+
+    //The following loop with iterate through the entire array of laser scans to find the index of the nearest wall and the wall's distance
+    i = 0;
     //will remeber locations of crashes to make best possible recovery assuming robot is still upright
     int indices_of_collisions[size];
 
@@ -80,10 +118,7 @@ void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
         }
         i++;
     }
-    //msg to be published to cmd_vel
-    geometry_msgs::Twist motorizer;
 
-    //will give back a value of 1 if it is back
     if(crashed)
     {   
         ROS_INFO("Recovering crash . . . ");
@@ -306,7 +341,6 @@ void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
     }
     else
     {
-        ROS_INFO("There is no crash detected.");
         case_5_tracker = 0;
         case_7_tracker = 0;
         case_10_tracker = 0;
@@ -314,12 +348,73 @@ void crash_recovery(const sensor_msgs::LaserScan::ConstPtr &scan)
         case_13_tracker = 0;
         case_14_tracker = 0;
         case_15_tracker = 0;
+        //calculations for switch statement
+        int l = 0;
+        int f = 0;
+        int r = 0;
+        //setting up calculators
+        if(wall_on_left) l = 1;
+        if(wall_in_front) f = 2;
+        if(wall_on_right) r = 4;
+        //var for switch statment
+        int wall_locations = l + f + r;
+
+        switch(wall_locations)
+        {
+            case 0: //no walls
+                ROS_INFO("case 0");
+                motorizer.linear.x = 0.5;
+                motorizer.angular.z = -0.77;
+                break;
+            case 1: //wall on left
+                ROS_INFO("case 1");
+                motorizer.linear.x = 0.5;
+                motorizer.angular.z = -0.65;
+                break;
+            case 2: //wall in front
+                ROS_INFO("case 2");
+                motorizer.angular.z = 0.5;
+                break;
+            case 3: //wall in front and on left
+                ROS_INFO("case 3");
+                motorizer.angular.z = 0.5;
+                break;
+            case 4: //wall on right
+                ROS_INFO("case 4");
+                motorizer.linear.x = 0.5;
+                break;
+            case 5: //wall on left and right
+                ROS_INFO("case 5");
+                motorizer.linear.x = 0.5;
+                break;
+            case 6: //wall front and right
+                ROS_INFO("case 6");
+                motorizer.angular.z = 0.5;
+                break;
+            case 7: //walls front, left, and right
+                ROS_INFO("case 7");
+                motorizer.angular.z = 0.5;
+                break;
+        }
+        if(scan->ranges[820] < 0.25) 
+        {
+            ROS_INFO("close on right");
+            motorizer.linear.x = 0.3;
+            motorizer.angular.z = 1.0;
+        }
+        if(scan->ranges[1890] < 0.25)
+        {   
+            ROS_INFO("close on left");
+            motorizer.angular.z = -1.0;
+            motorizer.linear.x = 0.3;
+        } 
+        pub.publish(motorizer);
     }
 }
 int main(int argc, char** argv)
 {   
     //node setup
-    ros::init(argc, argv, "crash_recovery_v2_node");
+    ros::init(argc, argv, "wall_avoider_v2_node");
     ros::NodeHandle n;
 
     //setting up parameters
@@ -330,8 +425,11 @@ int main(int argc, char** argv)
     //setting up publisher
     pub = n.advertise<geometry_msgs::Twist>(cmd_vel_output, 1000);
 
-    //will assume robot is crashed at start
-    crashed = true;
+    //variables start as false
+    wall_on_left = false;
+    wall_on_right = false;
+    wall_in_front = false;
+    crashed = false;
     case_5_tracker = 0;
     case_7_tracker = 0;
     case_10_tracker = 0;
@@ -341,7 +439,7 @@ int main(int argc, char** argv)
     case_15_tracker = 0;
 
     //setting up subscriber
-    sub = n.subscribe<sensor_msgs::LaserScan>(laser_scan, 1000, crash_recovery);
+    sub = n.subscribe<sensor_msgs::LaserScan>(laser_scan, 1000, wall_avoider);
 
     ros::Rate loop_rate(10);
     while(ros::ok())
