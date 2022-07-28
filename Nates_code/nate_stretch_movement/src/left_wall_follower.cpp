@@ -148,15 +148,17 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     }
 
     //will calculate which sides of the robot there are walls on
+    /*
     i = 0;
     while(i < 47)
     {
         if(scan->ranges[i] < 0.5) wall_on_left = true;
         i++;
     }
+    */
 
-    i = 880; //' 624 or 824 to 877
-    while(i < 890)
+    i = 624; //' 624 or 824 to 877, 880 to 890
+    while(i < 877)
     {   
         if(scan->ranges[i] < 0.5) wall_on_right = true;
         i++;
@@ -169,7 +171,7 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
         i++;
     }
 
-    i = 1825;
+    i = 1967; //was 1825
     while(i < 1977)
     {
         if(scan->ranges[i] < 0.5) wall_on_left = true;
@@ -593,7 +595,7 @@ void get_aligned(const sensor_msgs::LaserScan::ConstPtr &scan)
     //will turn the robot to its left if it is not aligned with the nearest wall
     else
     {
-        motorizer.angular.z = 0.5;
+        motorizer.angular.z = -0.5;
         pub.publish(motorizer);
         ROS_INFO("Completing first alignment . . .");
     }
@@ -624,7 +626,6 @@ void left_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan)
         case 1: //wall on left
             ROS_INFO("case 1");
             motorizer.linear.x = 0.5;
-            motorizer.angular.z = 0.65;
             break;
         case 2: //wall in front
             ROS_INFO("case 2");
@@ -636,6 +637,7 @@ void left_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan)
         case 4: //wall on right
             ROS_INFO("case 4");
             motorizer.linear.x = 0.5;
+            motorizer.angular.z = -0.65;
             break;
         case 5: //wall on left and right
             ROS_INFO("case 5");
