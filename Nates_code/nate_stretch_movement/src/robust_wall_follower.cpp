@@ -18,6 +18,8 @@ float distance_mem; //distance to nearest wall
 bool wall_on_left; 
 bool wall_on_right;
 bool wall_in_front;
+bool wall_in_front_right;
+bool wall_in_front_left;
 //variables to trigger new crash fixing attempts in certain scenarios
 int case_5_tracker;
 int case_7_tracker;
@@ -28,6 +30,8 @@ int case_14_tracker;
 int case_15_tracker;
 //var to reset explorer method
 int reset;
+//change mode
+int mode;
 
 //params
 std::string cmd_vel_output;
@@ -44,12 +48,13 @@ void get_oriented(const sensor_msgs::LaserScan::ConstPtr &scan);
 void get_closer(const sensor_msgs::LaserScan::ConstPtr &scan);
 void get_aligned(const sensor_msgs::LaserScan::ConstPtr &scan);
 //wall_follower
+void right_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan);
 void left_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan);
 
 int main(int argc, char** argv)
 {
     //setting up node
-    ros::init(argc, argv, "left_wall_follower_node");
+    ros::init(argc, argv, "robust_wall_follower_node");
     ros::NodeHandle n;
     //setting up parameters
     //for movement on the actual robot, cmd_vel_output: "/stretch/cmd_vel"
@@ -67,6 +72,8 @@ int main(int argc, char** argv)
     aligned = false;
     index_mem = 100;
     distance_mem = 5.0;
+    mode = 0;
+    reset = 0;
 
     //setting up subscriber
     sub = n.subscribe<sensor_msgs::LaserScan>(laser_scan, 1000, thinker);
@@ -93,6 +100,8 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     wall_on_left = false;
     wall_on_right = false;
     wall_in_front = false;
+    wall_in_front_left = false;
+    wall_in_front_right = false;
     //will remeber locations of crashes to make best possible recovery assuming robot is still upright
     int indices_of_collisions[size];
     //The following loop with iterate through the entire array of laser scans to find the index of the nearest wall and the wall's distance and set important conditions
@@ -148,30 +157,37 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
     }
 
     //will calculate which sides of the robot there are walls on
-    /*
     i = 0;
     while(i < 47)
     {
         if(scan->ranges[i] < 0.5) wall_on_left = true;
         i++;
     }
-    */
 
-    i = 624; //' 624 or 824 to 877, 880 to 890
-    while(i < 877)
+    i = 880; //' 624 or 824 to 877
+    while(i < 890)
     {   
         if(scan->ranges[i] < 0.5) wall_on_right = true;
         i++;
     }
 
     i = 1099;
-    while(i < 1640)
+    while(i < 1639)
     {
+        if(scan->ranges[i] < 0.5) wall_in_front_right = true;
         if(scan->ranges[i] < 0.5) wall_in_front = true;
         i++;
     }
 
-    i = 1967; //was 1825
+    i = 1639;
+    while(i < 1640)
+    {
+        if(scan->ranges[i] < 0.5) wall_in_front_left = true;
+        if(scan->ranges[i] < 0.5) wall_in_front = true;
+        i++;
+    }
+
+    i = 1825;
     while(i < 1977)
     {
         if(scan->ranges[i] < 0.5) wall_on_left = true;
@@ -210,9 +226,19 @@ void thinker(const sensor_msgs::LaserScan::ConstPtr &scan)
         {
             get_aligned(scan);
         }
+        else if(mode < 300)
+        {
+            right_wall_follower(scan);
+            mode++;
+        }
         else
         {
             left_wall_follower(scan);
+            mode++;
+            if(mode > 600)
+            {
+                mode = 0;
+            }
         }
     }
 }
@@ -269,7 +295,7 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
     int switch_setup = BL + BR + FR + FL;
     switch(switch_setup)
     {
-        case 0: //no collisions
+        case 0: //no Near collisions
             ROS_INFO("case 0: No collisions detected");
             case_5_tracker = 0;
             break;
@@ -567,7 +593,7 @@ void get_aligned(const sensor_msgs::LaserScan::ConstPtr &scan)
     geometry_msgs::Twist motorizer;
 
     //float to store distance in front of the object
-    float left = scan->ranges[1890];
+    float right = scan->ranges[820];
 
     //number of indices in laser scan array
     int size = scan->ranges.size();
@@ -587,7 +613,7 @@ void get_aligned(const sensor_msgs::LaserScan::ConstPtr &scan)
     }
 
     //if aligned, the global var will be set to true, and this function will no longer be called
-    if(left < distance_mem + 0.02 && left > distance_mem - 0.02)
+    if(right < distance_mem + 0.02 && right > distance_mem - 0.02)
     {
         aligned = true;
         ROS_INFO("FIRST ALIGNMENT COMPLETE.");
@@ -595,10 +621,76 @@ void get_aligned(const sensor_msgs::LaserScan::ConstPtr &scan)
     //will turn the robot to its left if it is not aligned with the nearest wall
     else
     {
-        motorizer.angular.z = -0.5;
+        motorizer.angular.z = 0.5;
         pub.publish(motorizer);
         ROS_INFO("Completing first alignment . . .");
     }
+}
+void right_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan)
+{
+    //geo msg to be published
+    geometry_msgs::Twist motorizer;
+
+    //calculations for switch statement
+    int l = 0;
+    int f = 0;
+    int r = 0;
+    //setting up calculators
+    if(wall_on_left) l = 1;
+    if(wall_in_front) f = 2;
+    if(wall_on_right) r = 4;
+    //var for switch statment
+    int wall_locations = l + f + r;
+
+    switch(wall_locations)
+    {
+        case 0: //no walls
+            ROS_INFO("case 0");
+            motorizer.linear.x = 0.5;
+            motorizer.angular.z = -1.0;
+            break;
+        case 1: //wall on left
+            ROS_INFO("case 1");
+            motorizer.linear.x = 0.5;
+            motorizer.angular.z = -0.65;
+            break;
+        case 2: //wall in front
+            ROS_INFO("case 2");
+            motorizer.angular.z = -0.5;
+        case 3: //wall in front and on left
+            ROS_INFO("case 3");
+            motorizer.angular.z = 0.5;
+            break;
+        case 4: //wall on right
+            ROS_INFO("case 4");
+            motorizer.linear.x = 0.5;
+            break;
+        case 5: //wall on left and right
+            ROS_INFO("case 5");
+            motorizer.linear.x = 0.5;
+            break;
+        case 6: //wall front and right
+            ROS_INFO("case 6");
+            motorizer.angular.z = 0.5;
+            break;
+        case 7: //walls front, left, and right
+            ROS_INFO("case 7");
+            motorizer.angular.z = 0.5;
+            break;
+    }
+    if(scan->ranges[820] < 0.25) 
+    {
+        ROS_INFO("close on right");
+        motorizer.linear.x = 0.3;
+        motorizer.angular.z = 1.0;
+    }
+    if(scan->ranges[1890] < 0.25)
+    {   
+        ROS_INFO("close on left");
+        motorizer.angular.z = -1.0;
+        motorizer.linear.x = 0.3;
+    } 
+    pub.publish(motorizer);
 }
 void left_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan)
 {

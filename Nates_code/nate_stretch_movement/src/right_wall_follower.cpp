@@ -256,7 +256,7 @@ void explorer()
 //will recover robot if it is crashed but still upright
 void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_collisions[2000], int size)
 {
-    ROS_INFO("Recovering crash . . . ");
+    ROS_INFO("Avoiding crash . . . ");
 
     //msg to be published to cmd_vel
     geometry_msgs::Twist motorizer;
@@ -280,31 +280,31 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
     int switch_setup = BL + BR + FR + FL;
     switch(switch_setup)
     {
-        case 0: //no collisions
+        case 0: //no Near collisions
             ROS_INFO("case 0: No collisions detected");
             case_5_tracker = 0;
             break;
         case 1: //collison back left
-            ROS_INFO("case 1: Collision back left");
+            ROS_INFO("case 1: Near collision back left");
             motorizer.angular.z = -0.5;
             motorizer.linear.x = 0.5;
             break;
-        case 2: //collision back right
-            ROS_INFO("case 2: Collision back right");
+        case 2: //Near collision back right
+            ROS_INFO("case 2: Near collision back right");
             motorizer.angular.z = 0.5;
             motorizer.linear.x = 0.5;
             break;
-        case 3: //collisions on back left and right
-            ROS_INFO("case 3: Collisions back left and right");
+        case 3: //Near collisions on back left and right
+            ROS_INFO("case 3: Near collisions back left and right");
             motorizer.linear.x = 1.0;
             break;
-        case 4: //collision front right
-            ROS_INFO("case 4: Collision front right");
+        case 4: //Near collision front right
+            ROS_INFO("case 4: Near collision front right");
             motorizer.angular.z = -0.5; 
             motorizer.linear.x = -0.5;
             break;
-        case 5: //collision front right and back left
-            ROS_INFO("case 5: Collision front right and back left");
+        case 5: //Near collision front right and back left
+            ROS_INFO("case 5: Near collision front right and back left");
             if(case_5_tracker < 7)
             {
                 motorizer.angular.z = 0.5;
@@ -323,13 +323,13 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
                 case_5_tracker = 0;
             }
             break;
-        case 6: //collisions front right and back right
-            ROS_INFO("case 6: Collisions back right and front right");
+        case 6: //Near collisions front right and back right
+            ROS_INFO("case 6: Near collisions back right and front right");
             motorizer.angular.z = 0.5;
             motorizer.linear.x = 0.5;
             break;
         case 7:
-            ROS_INFO("case 7: Collisions front right, back right, and back left");
+            ROS_INFO("case 7: Near collisions front right, back right, and back left");
             if(case_7_tracker < 7)
             {
                 motorizer.angular.z = 0.5;
@@ -349,17 +349,17 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
             }
             break;
         case 8:
-            ROS_INFO("case 8: Collision front left");
+            ROS_INFO("case 8: Near collision front left");
             motorizer.angular.z = 0.5; 
             motorizer.linear.x = -0.5;
             break;
         case 9:
-            ROS_INFO("case 9: Collisions front left and back left");
+            ROS_INFO("case 9: Near collisions front left and back left");
             motorizer.angular.z = -0.5;
             motorizer.linear.x = 0.5;
             break;
         case 10:
-            ROS_INFO("case 10: Collisions front left and back right");
+            ROS_INFO("case 10: Near collisions front left and back right");
             if(case_10_tracker < 7)
             {
                 motorizer.angular.z = -0.5;
@@ -379,7 +379,7 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
             }
             break;
         case 11:
-            ROS_INFO("case 11: Collisions front left, back left, and back right");
+            ROS_INFO("case 11: Near collisions front left, back left, and back right");
             if(case_11_tracker < 7)
             {
                 motorizer.angular.z = -0.5;
@@ -399,11 +399,11 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
             }
             break;
         case 12:
-            ROS_INFO("case 12: Collisions front left and front right");
+            ROS_INFO("case 12: Near collisions front left and front right");
             motorizer.linear.x = -0.5;
             break;
         case 13:
-            ROS_INFO("case 13: Collisions front left, back left, and front right");
+            ROS_INFO("case 13: Near collisions front left, back left, and front right");
             if(case_13_tracker < 7)
             {
                 motorizer.angular.z = 0.5; 
@@ -423,7 +423,7 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
             }
             break;
         case 14:
-            ROS_INFO("case 14: Collisions front left, front right, and back right");
+            ROS_INFO("case 14: Near collisions front left, front right, and back right");
             if(case_14_tracker < 7)
             {
                 motorizer.angular.z = -0.5; 
@@ -443,7 +443,7 @@ void crash_recovery(const sensor_msgs::LaserScanConstPtr &scan, int indices_of_c
             }
             break;
         case 15:
-            ROS_INFO("case 15: Collisions on multiple sides.");
+            ROS_INFO("case 15: Near collisions on multiple sides.");
             if(case_15_tracker < 4)
             {
                 motorizer.linear.x = 0.1;
