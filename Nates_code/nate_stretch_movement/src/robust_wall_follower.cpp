@@ -713,7 +713,7 @@ void left_wall_follower(const sensor_msgs::LaserScan::ConstPtr &scan)
         case 0: //no walls
             ROS_INFO("case 0");
             motorizer.linear.x = 0.5;
-            motorizer.angular.z = 1.0;
+            motorizer.angular.z = -0.8;
             break;
         case 1: //wall on left
             ROS_INFO("case 1");

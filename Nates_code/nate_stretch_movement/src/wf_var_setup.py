@@ -66,12 +66,14 @@ class WFVarSetup:
 
     def collisions(self):
 
-        indices_of_collisions = [3000] * 2000
+        indices_of_collisions = [3000] * self._size
+
+        i = 0
 
         while not rospy.is_shutdown() and i < self._size:
 
             #crash measurements
-            if i > 0 and i < 48 and self._scan.ranges[i] < 0.25:
+            if i >= 0 and i < 48 and self._scan.ranges[i] < 0.25:
                 indices_of_collisions[i] = i
 
             elif i > 47 and i < 98 and self._scan.ranges[i] < 0.3:
@@ -88,13 +90,17 @@ class WFVarSetup:
 
             elif i > 1802 and i < 2000 and self._scan.ranges[i] < 0.25:
                 indices_of_collisions[i] = i
+            else:
+                indices_of_collisions[i] = 3000
         
             i+=1
+
+        #print(indices_of_collisions)
         
         return indices_of_collisions
 
     def nearest_wall_index(self):
-
+        i = 0
         index_mem = 0
         while not rospy.is_shutdown() and i < self._size:
 
@@ -106,6 +112,7 @@ class WFVarSetup:
 
     def nearest_wall_distance(self):
 
+        i = 0
         index_mem = 0
         distance_mem = 0.0
         while not rospy.is_shutdown() and i < self._size:
@@ -120,7 +127,7 @@ class WFVarSetup:
 #SUBSCRIBER CALLBACK
 def calling_setup(scan):
     wfvs = WFVarSetup(scan)
-    print("The size of the array of laser values is " + wfvs.length())
+    print("The size of the array of laser values is " + str(wfvs.length()))
     if wfvs.left_wall():
         print("There is a wall on the left")
     else:
@@ -133,20 +140,21 @@ def calling_setup(scan):
         print("There is a wall on the right")
     else:
         print("There is no wall on the right")
-    locations_of_collisions = wfvs.collisions
+    locations_of_collisions = wfvs.collisions()
+    #print(locations_of_collisions)
     i = 0
-    while i < 2000
-        if(locations_of_collisions[i] != 3000):
-            print("There is a collision at scan.ranges[" + i + "]")
+    while not rospy.is_shutdown() and i < 2000:
+        if locations_of_collisions[i] != 3000:
+            print("There is a collision at scan.ranges[" + str(i) + "]")
         i+=1
-    print("The index of the nearest wall is " + wfvs.nearest_wall_index)
-    print("The distance to the nearest wall is " + wfvs.nearest_wall_distance)
+    print("The index of the nearest wall is " + str(wfvs.nearest_wall_index()))
+    print("The distance to the nearest wall is " + str(wfvs.nearest_wall_distance()))
     
 #BASICALLY ALSO MAIN
 def jumpstart():
     try:
         #setting up node
-        rospy.init_node("wf_var_setup_python_node", anonymous =True)
+        rospy.init_node("WF_Var_Setup_Node", anonymous =True)
 
         #setting up subscriber
         sub = rospy.Subscriber("/scan", LaserScan, calling_setup)
