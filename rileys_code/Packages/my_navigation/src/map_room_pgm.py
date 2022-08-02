@@ -1,90 +1,72 @@
 #!/usr/bin/env python
 import rospy
-from numpy import angle, linspace, inf, tanh
-from math import sin, pi
-from geometry_msgs.msg import Twist
-from geometry_msgs.msg import TwistStamped
-from sensor_msgs.msg import LaserScan
+from time import time
+from map_enclosed import map
+# from map_explorer import movement
 
 
 # Params
-get_map_service_name = rospy.get_param("~get_map_service_name", "static_map")       # Topic for GetMap service
-twist_topic = rospy.get_param("~twist_topic", "/cmd_vel")                           # Topic for the Command velocity
-laser_topic = rospy.get_param("laser_topic", "/scan")                               # Topic for the LaserScan
-obstacle_avoid_distance = rospy.get_param("~obstacle_avoid_distance", 1.0)          # Distance at which obstacle avoidance kicks in (m)
-straight_ahead_angle = rospy.get_param("~straight_ahead_angle", 0)                  # LaserScan angle that corresponds to straight ahead (deg)
-laser_refresh_rate = rospy.get_param("~laser_refresh_rate", 5)                      # Refresh rate of the LaserScan (sec)
-explore_time = rospy.get_param("~explore_time", 10)                                 # Time to explore before checking the map (sec)
-speed = rospy.get_param("~speed", 0.5)                                              # Linear speed of the base (m/sec)
-turn = rospy.get_param("~turn", 0.3)                                                # Angular speed of the base (rad/sec)
+#get_map_service_name = rospy.get_param("~get_map_service_name", "static_map")       # Topic for GetMap service
+#twist_topic = rospy.get_param("~twist_topic", "/cmd_vel")                           # Topic for the Command velocity
+#laser_topic = rospy.get_param("laser_topic", "/scan")                               # Topic for the LaserScan
+#obstacle_avoid_distance = rospy.get_param("~obstacle_avoid_distance", 1.0)          # Distance at which obstacle avoidance kicks in (m)
+#straight_ahead_angle = rospy.get_param("~straight_ahead_angle", 0)                  # LaserScan angle that corresponds to straight ahead (deg)
+#laser_refresh_rate = rospy.get_param("~laser_refresh_rate", 5)                      # Refresh rate of the LaserScan (sec)
+#explore_time = rospy.get_param("~explore_time", 10)                                 # Time to explore before checking the map (sec)
+#time_before_intervention = rospy.get_param("~intervention_time", 5)                 # Time before asking if the user wants to continue mapping or cut losses and format (minutes)
+#speed = rospy.get_param("~speed", 0.5)                                              # Linear speed of the base (m/sec)
+#turn = rospy.get_param("~turn", 0.3)                                                # Angular speed of the base (rad/sec)
 
 
-
-class movement:
-    def __init__(self):
-        self.laser = LaserScan()
-        self.twist = Twist()
-        self.twist.linear.x = 0
-        self.twist.linear.y = 0
-        self.twist.linear.z = 0
-        self.twist.angular.x = 0
-        self.twist.angular.y = 0
-        self.twist.angular.z = 0
-
-    def laser_update(self, msg):
-        self.laser = msg
-    
-    def explore(self):
-            rate = rospy.Rate(laser_refresh_rate)
-            self.twist.linear.x = speed
-            twist_pub.publish(self.twist)
-
-            for i in range(int(explore_time * laser_refresh_rate)):
-
-                angle_of_turn = 0
-                # Obstacle avoid if needed
-                if self.laser.range_min <= obstacle_avoid_distance:
-                    if self.laser.angle_increment is 0.0 :
-                        print("error imcrement is 0 ")
-                        return
-                    number_of_scans = (self.laser.angle_max - self.laser.angle_min) / self.laser.angle_increment
-                    # Find the angle of the closest object
-                    for i in range(number_of_scans):
-
-                        if self.laser.ranges[i] is self.laser.range_min:
-                            angle_of_closest_object = self.laser.angle_min + ( i * self.laser.angle_increment)
-                    # Turn away from that object 
-                    if angle_of_closest_object > straight_ahead_angle:
-                        # Object is to the left so turn right
-                        angle_of_turn = -90 + (angle_of_closest_object - straight_ahead_angle)
-                    elif angle_of_closest_object < straight_ahead_angle:
-                        # Object is to the right so turn left
-                        angle_of_turn = 90 - (angle_of_closest_object - straight_ahead_angle)
-                    else:
-                        # Object is straight ahead (default turn angle will be right)
-                        angle_of_turn = 90
-                    self.twist.angular.z = angle_of_turn / 90
-            twist_pub.publish(self.twist)
-            rate.sleep
-
-            # Stop
-            self.twist.linear.x = 0
-            self.twist.angular.z = 0
-            twist_pub.publish(self.twist)
-
-# Global variables 
-motion = movement()
-map = gmap()
-laser_sub = rospy.Subscriber(laser_topic, LaserScan, motion.laser_update)
-twist_pub = rospy.Publisher(twist_topic, Twist, queue_size=1)
+# Temp variable because the param doesnt exist yet
+time_before_intervention = 1020
 
 
+# This file is the main file that will do the enitre autonomous mapping based off map_enclosed and map_explore
+# map_explore has not been made yet, and map_enclosed might need a function to convert possible wall gaps into xy coords
 if __name__ == "__main__":
      # ROS Node
-    rospy.init_node("slam_map_room")
-    motion.explore()
+     #rospy.init_node("slam_map_room")
+     #map = map(get_map_service_name)
+     #movement = movement()
+
+     # Dealing with time
+     start_time = int(time())
+     time_before_intervention_sec = time_before_intervention * 60   # convert to seconds
+
+
+     #map_enclosed = map.is_enclosed_from_scratch()
+     map_enclosed = False
+     while map_enclosed == False:
+          #movement.explore(explore_time)
+          #map_enclosed = map.is_enclosed_from_scratch()
+          current_time = int(time())
+          if start_time + time_before_intervention_sec <= current_time:
+               # Time to ask for intervention
+               print("It has been {} minutes and I havent finished.".format(time_before_intervention))
+               print("You can see the current version of the map in RViz.")
+               print("If you would like to continue scanning, respond with (y)es.")
+               print("If you are satisfied with the map and would like it formatted, respond with (n)o.")
+               user_request = str(raw_input("Continue Scanning?   (y/n): "))
+               if user_request.lower() == 'n':
+                    #map.find_wall_gaps()
+                    #print("Formatting Map")
+                    #map.cut_losses_and_format_map()
+                    # Publishing the map so it can be saved by map_saver
+                    #print("Publishing Closed Map.")
+                    #map.publish_closed_map()
+                    print('Enclosed Map Written as "make a text variable for the enclosed maps file name"')
+                    break
+               # Reset the intervention timer by making start_time the current time
+               start_time = int(time())
+
+     print("Completed.")
 
 
 
 
+## current goal is having minute updates and having a variable for the final map file name
 
+
+### Important info for tomorrow!!!!! : origin : The 2-D pose of the lower-left pixel in the map, as (x, y, yaw), with yaw as counterclockwise rotation (yaw=0 means no rotation). Many parts of the system currently ignore yaw. 
+##### ^^^^^^ found at http://wiki.ros.org/map_server

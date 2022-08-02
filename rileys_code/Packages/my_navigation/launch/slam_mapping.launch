@@ -1,9 +1,0 @@
-<launch>
-<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_yaml)" />
-  <node pkg="my_navigation" name="slam_mapping" type="slam_mapping.py" output="screen">
-  <param name="~get_map_topic_name" type="string" value="/static_map"/>
-  <param name="~print_crop_data"           type="bool" value="true"/>
-  <param name="~print_is_enclosed_process" type="bool" value="false"/>
-  <param name="~print_final_terminal_map"  type="bool" value="true"/>
-  </node>
-</launch>
