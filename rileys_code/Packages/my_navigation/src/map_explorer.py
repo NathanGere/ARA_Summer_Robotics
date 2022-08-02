@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import rospy
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan 
 
-class Move:
+class Movement:
 
 	def __init__(self):
 		self.pub = rospy.Publisher('/stretch_diff_drive_controller/cmd_vel', Twist, queue_size=1)
@@ -11,8 +12,8 @@ class Move:
 		self.command = Twist()
 		self.command.linear.x = 0.0
 		self.command.angular.z = 0.0
-		self.command.linear.y = 0.0		#do not change these values
-		self.command.linear.z = 0.0		#do not change these values
+		self.command.linear.y = 0.0			#do not change these values
+		self.command.linear.z = 0.0			#do not change these values
 		self.command.angular.x = 0.0		#do not change these values
 		self.command.angular.y = 0.0		#do not change these values
 
@@ -51,14 +52,14 @@ class Move:
 
 if __name__ == '__main__':
 	rospy.init_node('move')
-	base_motion = Move()
+	base_motion = Movement()
 
 	rate = rospy.Rate(1)
 	
 	##########FIX THIS SO IT DOESNT MOVE FORWARD FOREVER!!!! WE WANT ACTUAL MOTION CONTROLS##############
 	while not rospy.is_shutdown():
 		# Get input
-		Base_motion = Move()
+		Base_motion = Movement()
 		Base_motion.move_forward()
 		rate.sleep()
 		Base_motion.move_backwards()
