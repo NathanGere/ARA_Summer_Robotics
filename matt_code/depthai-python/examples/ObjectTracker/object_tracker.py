@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from ftplib import FTP_PORT
 import os
 from pathlib import Path
 import cv2
@@ -109,17 +110,27 @@ with dai.Device(pipeline, usb2Mode=True) as device:
             cv2.putText(frame, t.status.name, (x1 + 10, y1 + 50), cv2.FONT_HERSHEY_TRIPLEX, 0.5, 255)
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, cv2.FONT_HERSHEY_SIMPLEX)
 
-            print("------------------------------------------------------------------------------------\n")
-            print("----------------------------")
-            print("Starting search for person!")
-            print("----------------------------\n")
-            print("----------------------------")
-            print ("Now in object_tracker File")
-            print("----------------------------\n")
-            file1 = open("label.txt", "w+")
-            file1.write(label)
-            file1.close()
-            seeker_return.person_response_returner()
+            if label == "person":
+                print("------------------------------------------------------------------------------------\n")
+                print("----------------------------")
+                print("Starting search for person!")
+                print("----------------------------\n")
+                print("----------------------------")
+                print ("Now in object_tracker File")
+                print("----------------------------\n")
+
+                # dir_path = Path('C://home/csrobot/stretch_ws/src/ARA_Summer_Robotics/')
+                # file_name = 'label.txt'
+                # if dir_path.is_dir():
+                    # with open(dir_path.joinpath(file_name), "w") as fp:
+                        # fp.write(label)
+                # else:
+                    # print("Directory doesn't exist!")
+                
+                file1 = open("label.txt", "w+")
+                file1.write(label)
+                file1.close()
+                seeker_return.person_response_returner()
 
         cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
 
@@ -127,4 +138,3 @@ with dai.Device(pipeline, usb2Mode=True) as device:
 
         if cv2.waitKey(1) == ord('q'):
             break
-
