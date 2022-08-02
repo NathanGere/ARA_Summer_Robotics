@@ -104,6 +104,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_gui_bridge
 #  CATKIN_DEPENDS rosbridge_server
+#  CATKIN_DEPENDS nodejs
 #  DEPENDS system_lib
 )
 

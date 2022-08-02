@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Combination Interface</title>
+    <!-- Includes -->
+  
+<meta charset="utf-8" />
+
+<script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.js"></script>
+
+<script type="text/javascript" type="text/javascript">
+
+    // Connect to Ros
+
+    var ros = new ROSLIB.Ros({
+    url : 'ws://localhost:2022'
+    });
+
+    ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+    });
+
+    ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+    });
+
+    ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+    });
+
+    // Connect to Ros Topics
+
+    var alexa_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : '/alexa_msgs',
+    messageType : 'std_msgs/String'
+    });//to inform user alexa was used
+
+    var cmd_vel_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : "/stretch_diff_drive_controller/cmd_vel",
+    messageType : 'geometry_msgs/Twist'
+    });//moves base
+
+    //  var arm_topic = new ROSLIB.Topic({
+    //    ros : ros,
+    //    name : "/stretch_arm_controller/??",
+    //    messageType : ''
+    //  });//includes lift, arm, and wrist
+
+    //  var gripper_topic = new ROSLIB.Topic({
+    //    ros : ros,
+    //    name : "/stretch_gripper_controller/??",
+    //    messageType : ''
+    //  });//just the fingers
+
+    // subscribers
+
+    alexa_topic.subscribe(function(m) {
+    document.getElementById("txt_msg").innerHTML = m.data;
+    });
+
+    // Created functions
+
+    move = function (linear_vel, angular_vel) {
+    var twist = new ROSLIB.Message({
+        linear: {
+        x: linear_vel,
+        y: 0,
+        z: 0
+        },
+        angular: {
+        x: 0,
+        y: 0,
+        z: angular_vel
+        }
+    });
+    cmd_vel_topic.publish(twist);
+    }
+
+    createJoystick = function () {
+    var options = {
+        zone: document.getElementById('zone_joystick'),
+        threshold: 0.1,
+        position: { left: 50 + '%' },
+        mode: 'static',
+        size: 150,
+        color: '#981278'
+    };
+    manager = nipplejs.create(options);
+
+    linear_speed = 0;
+    angular_speed = 0;
+
+    manager.on('start', function (event, nipple) {
+        timer = setInterval(function () {
+        move(linear_speed, angular_speed);
+        }, 25);
+    });
+
+    manager.on('move', function (event, nipple) {
+        max_linear = 5.0; // m/s
+        max_angular = 2.0; // rad/s
+        max_distance = 75.0; // pixels;
+        linear_speed = Math.sin(nipple.angle.radian) * max_linear * nipple.distance/max_distance;
+            angular_speed = -Math.cos(nipple.angle.radian) * max_angular * nipple.distance/max_distance;
+    });
+
+    manager.on('end', function () {
+        if (timer) {
+        clearInterval(timer);
+        }
+        self.move(0, 0);
+    });
+    }
+    window.onload = function () {
+    createJoystick();
+    }
+
+</script>
+</head>
+
+<!-- style classes -->
+
+<style>
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+    }
+    .buttondesign{
+        border: 10px solid black;
+        background-color: white;
+        padding: 40px 40px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 22px;
+        font-weight: bolder;
+        margin: 20px 10px;
+    }
+</style>
+
+<!-- What the client sees -->
+
+<body>
+    <h1 style="text-align: center;">On this page there are different ways to control Stretch</h1>
+    <hr>
+    <p>Connection status: <span id="status"></span></p>
+    <p>Last /alexa_msgs received: <span id="txt_msg"></span></p>
+
+    <h2 style="text-align: center; margin-top: 100px;">Use the provided joystick to drive Stretch around!</h2>
+    <div id="zone_joystick" style="position: relative; margin-top: 1in;"></div>
+    <h2 style="text-align: center; margin-top: 300px;">Use the buttons to move Stretch around!</h2>
+    <br>
+
+    <div class="center">
+    <button class="buttondesign" onclick="move(1,0)">Forward</button>
+    <button class="buttondesign" onclick="move(-1,0)">Backwards</button>
+    <button class="buttondesign" onclick="move(0,1)">Turn Left</button>
+    <button class="buttondesign" onclick="move(0,-1)">Turn Right</button>
+    </div>
+
+
+    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+</body>
+</html>
