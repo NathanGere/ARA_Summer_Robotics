@@ -8,6 +8,6 @@
     <param name="~get_map_topic_name"        type="string" value="/static_map"/>
     <param name="~print_crop_data"           type="bool"   value="false"/>
     <param name="~print_is_enclosed_process" type="bool"   value="false"/>
-    <param name="~print_final_terminal_map"  type="bool"   value="true"/>
+    <param name="~print_final_terminal_map"  type="bool"   value="false"/>
   </node>
 </launch>
