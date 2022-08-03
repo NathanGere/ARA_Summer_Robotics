@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Joystick Interface</title>
+
+<style>
+    /* Height adjusted for driving joystick*/
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 250px;
+    }
+    .buttondesign{
+        border: 10px solid black;
+        background-color: white;
+        padding: 40px 40px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 22px;
+        font-weight: bolder;
+        margin: 20px 10px;
+    }
+    .changingpagecenter {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    .changingpagebuttondesign{
+        border: 5px solid black;
+        background-color: #eee;
+        padding: 20px 20px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: bolder;
+        margin: 10px 5px;
+        cursor: pointer;
+    }
+    .active, .changingpagebuttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+</style>
+    <!-- Includes -->
+  
+<meta charset="utf-8" />
+
+<script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.js"></script>
+
+<script type="text/javascript">
+
+    // Connect to Ros
+
+    var ros = new ROSLIB.Ros({
+    url : 'ws://0.0.0.0:2022'
+    });
+
+    ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+    });
+
+    ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+    });
+
+    ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+    });
+
+    // Connect to Ros Topics
+
+    var cmd_vel_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : "/stretch_diff_drive_controller/cmd_vel",
+    messageType : 'geometry_msgs/Twist'
+    });//moves base
+
+    // Created functions
+
+    move = function (linear_vel, angular_vel) {
+    var twist = new ROSLIB.Message({
+        linear: {
+        x: linear_vel,
+        y: 0,
+        z: 0
+        },
+        angular: {
+        x: 0,
+        y: 0,
+        z: angular_vel
+        }
+    });
+    cmd_vel_topic.publish(twist);
+    }
+
+    createJoystick = function () {
+    var options = {
+        zone: document.getElementById('zone_joystick'),
+        threshold: 0.1,
+        position: { left: 50 + '%' },
+        mode: 'static',
+        size: 250,
+        color: '#000000'
+    };
+    manager = nipplejs.create(options);
+
+    linear_speed = 0;
+    angular_speed = 0;
+
+    manager.on('start', function (event, nipple) {
+        timer = setInterval(function () {
+        move(linear_speed, angular_speed);
+        }, 25);
+    });
+
+    manager.on('move', function (event, nipple) {
+        max_linear = 1.0; // m/s
+        max_angular = 1.0; // rad/s
+        max_distance = 75.0; // pixels;
+        linear_speed = Math.sin(nipple.angle.radian) * max_linear * nipple.distance/max_distance;
+            angular_speed = -Math.cos(nipple.angle.radian) * max_angular * nipple.distance/max_distance;
+    });
+
+    manager.on('end', function () {
+        if (timer) {
+        clearInterval(timer);
+        }
+        self.move(0, 0);
+    });
+    }
+    window.onload = function () {
+    createJoystick();
+    }
+
+</script>
+</head>
+
+<body>
+    <h1 style="text-align: center; color: blue">Welcome to the Joystick Interface</h1>
+    <hr>
+
+    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
+    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
+    <h3>Connection Status: <span id="status"></span></h3>
+    
+    <br>
+
+    <h2 style="text-align: center">Basic Joystick For Moving Stretch Robot Base</h2>
+    <br>
+    <div id="zone_joystick" class="center" style="position:relative"></div>
+
+    <br>
+
+    <p>Choose which page you would like to travel to.</p>
+    <p><strong>Remeber</strong> you are already on the <mark>Joystick Interface</mark></p>
+
+    <div class="changingpagecenter">
+        <a href="joystick.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="combination.html">
+            <button class="changingpagebuttondesign">Full Interface</button>
+        </a>
+
+        <a href="home.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
+    <hr>
+    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+</body>
+
+</html>

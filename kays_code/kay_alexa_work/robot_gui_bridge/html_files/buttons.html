@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Buttons Interface</title>
+
+<!-- Styles -->
+<style>
+    /* Centers */
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 150px;
+    }
+    /* Basic design for button */
+    .buttondesign{
+        border: 10px solid black;
+        background-color: white;
+        width: 300px;
+        height: 100px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 20px;
+        font-weight: bolder;
+        margin: 0px 20px;
+        cursor: pointer;
+    }
+    .active, .buttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+    .changingpagecenter {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    .changingpagebuttondesign{
+        border: 5px solid black;
+        background-color:  #eee;
+        padding: 20px 20px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: bolder;
+        margin: 10px 5px;
+        cursor: pointer;
+    }
+    .active, .changingpagebuttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+    .collapsible {
+        background-color: #eee;
+        color: black;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 22px;
+        font-weight: bolder;
+    }
+    .active, .collapsible:hover {
+        background-color: #ccc;
+    }
+    /* Style the collapsible text, hidden by default */
+    .collapsibletext {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: 0.2s ease-out;
+    }
+    .collapsible:after {
+        content: '\02795';  /* Unicode character for "plus" sign (+) */
+        font-size: 13px;
+        color: black;
+        float: right;
+        margin-left: 5px;
+    }
+    .active:after {
+        content: "\2796"; /* Unicode character for "minus" sign (-) */ 
+    }
+</style>
+        <!-- Includes -->
+  
+<meta charset="utf-8" />
+
+<script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+
+<script type="text/javascript">
+    // Connect to Ros
+
+    var ros = new ROSLIB.Ros({
+    url : 'ws://0.0.0.0:2022'
+    });
+
+    ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+    });
+
+    ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+    });
+
+    ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+    });
+
+    // Connect to Ros Topics
+
+    var cmd_vel_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : "/stretch_diff_drive_controller/cmd_vel",
+    messageType : 'geometry_msgs/Twist'
+    });//moves base
+
+    var arm_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : '/stretch_arm_controller/follow_joint_trajectory/goal',
+    messageType : 'control_msgs/FollowJointTrajectoryGoal'
+    });//to connect to the arm
+
+    //created functions
+    move = function (linear_vel, angular_vel) {
+    var twist = new ROSLIB.Message({
+        linear: {
+        x: linear_vel,
+        y: 0,
+        z: 0
+        },
+        angular: {
+        x: 0,
+        y: 0,
+        z: angular_vel
+        }
+    });
+    cmd_vel_topic.publish(twist);
+    }
+
+    movearm = function (joint) {
+    var arm_goal = new ROSLIB.Message({
+
+    });
+    cmd_vel_topic.publish(arm_goal);
+    }
+
+</script>
+
+</head>
+
+<body>
+    <h1 style="text-align: center; color: blue">Welcome to the Buttons Interface</h1>
+    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
+    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
+    <h3>Connection Status: <span id="status"></span></h3>
+
+    <br>
+
+    <h2 style="text-align: center">Basic Driving Controls</h2>
+    <div class="center" style="background-color: lightblue">
+        <button type="button" class="buttondesign" onclick="move(1,0)">Forward</button>
+        <button type="button" class="buttondesign" onclick="move(-1,0)">Backwards</button>
+        <button type="button" class="buttondesign" onclick="move(0,1)">Turn Left</button>
+        <button type="button" class="buttondesign" onclick="move(0,-1)">Turn Right</button>
+        <button type="button" class="buttondesign" onclick="move(0,0)">Stop Movement</button>
+    </div>
+
+    <br>
+
+    <h2 style="text-align: center">Basic Arm Controls</h2>
+    <div class="center" style="background-color: lightgreen">
+        <button type="button" class="buttondesign" onclick="movearm()">Move lift Up</button>
+        <button type="button" class="buttondesign" onclick="movearm()">Move Lift Down</button>
+        <button type="button" class="buttondesign" onclick="movearm()">Extend Arm</button>
+        <button type="button" class="buttondesign" onclick="movearm()">Collapse Arm</button>
+        <button type="button" class="buttondesign" onclick="movearm()">Stop Movement</button>
+    </div>
+
+    <p>Choose which page you would like to travel to.</p>
+    <p><strong>Remeber</strong> you are already on the <mark>Buttons Interface</mark></p>
+
+    <div class="changingpagecenter">
+        <a href="joystick.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="combination.html">
+            <button class="changingpagebuttondesign">Full Interface</button>
+        </a>
+
+        <a href="home.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
+    <hr>
+    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+</body>
+
+</html>

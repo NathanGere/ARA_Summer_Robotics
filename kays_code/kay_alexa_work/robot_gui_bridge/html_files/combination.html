@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Combination Interface</title>
+
+<!-- Styles -->
+<style>
+    /* Centers */
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 150px;
+    }
+    /* Basic design for button */
+    .buttondesign{
+        border: 10px solid black;
+        background-color: white;
+        width: 300px;
+        height: 100px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 20px;
+        font-weight: bolder;
+        margin: 0px 20px;
+        cursor: pointer;
+    }
+    .active, .buttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+    .changingpagecenter {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    .changingpagebuttondesign{
+        border: 5px solid black;
+        background-color: #eee;
+        padding: 20px 20px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: bolder;
+        margin: 10px 5px;
+        cursor: pointer;
+    }
+    .active, .changingpagebuttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+    /* Add a background color to the button if it is clicked on (add the .active class with JS), 
+    and when you move the mouse over it (hover) */
+    .collapsible {
+        background-color: #eee;
+        color: black;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 22px;
+        font-weight: bolder;
+    }
+    .active, .collapsible:hover {
+        background-color: #ccc;
+    }
+    /* Style the collapsible text, hidden by default */
+    .collapsibletext {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: 0.2s ease-out;
+    }
+    
+    .collapsible:after {
+        content: '\02795';  /* Unicode character for "plus" sign (+) */
+        font-size: 13px;
+        color: black;
+        float: right;
+        margin-left: 5px;
+    }
+    .active:after {
+        content: "\2796"; /* Unicode character for "minus" sign (-) */ 
+    }
+    th, td { /* Formating for Tables*/
+        border: 4px black;
+        border-style: solid; 
+        text-align: center;
+        font-size: 25px;
+    }
+
+    /* Formating for split screen*/
+    .middleofscreen {
+        margin-top: 5%;
+        height: 30%;
+        width: 100%;
+    }
+    .bottomofscreen {
+        margin-top: 35%;
+        height: 40%;
+        width: 100%;
+        background-color: none;
+    }
+    .split {
+        position:absolute;
+        z-index: 1;
+        overflow-x: hidden;
+    }
+
+    .left {
+        left: 0;
+        width: 50%;
+        background-color: none;
+    }
+
+    .right {
+        right: 0;
+        width: 50%;
+        background-color: none;
+    }
+
+    .centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+</style>
+    
+    <!-- Includes -->
+  
+<meta charset="utf-8" />
+
+<script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.js"></script>
+
+<script type="text/javascript">
+
+    // Connect to Ros
+
+    var ros = new ROSLIB.Ros({
+    url : 'ws://0.0.0.0:2022'
+    });
+
+    ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+    });
+
+    ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+    });
+
+    ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+    });
+
+    // Connect to Ros Topics
+
+    var alexa_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : '/alexa_msgs',
+    messageType : 'std_msgs/String'
+    });//to inform user alexa was used
+
+    var cmd_vel_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : "/stretch_diff_drive_controller/cmd_vel",
+    messageType : 'geometry_msgs/Twist'
+    });//moves base
+
+    //  var arm_topic = new ROSLIB.Topic({
+    //    ros : ros,
+    //    name : "/stretch_arm_controller/??",
+    //    messageType : ''
+    //  });//includes lift, arm, and wrist
+
+    //  var gripper_topic = new ROSLIB.Topic({
+    //    ros : ros,
+    //    name : "/stretch_gripper_controller/??",
+    //    messageType : ''
+    //  });//just the fingers
+
+    // subscribers
+
+    alexa_topic.subscribe(function(m) {
+    document.getElementById("txt_msg").innerHTML = m.data;
+    });
+
+    // Created functions
+
+    move = function (linear_vel, angular_vel) {
+    var twist = new ROSLIB.Message({
+        linear: {
+        x: linear_vel,
+        y: 0,
+        z: 0
+        },
+        angular: {
+        x: 0,
+        y: 0,
+        z: angular_vel
+        }
+    });
+    cmd_vel_topic.publish(twist);
+    }
+
+    createJoystick = function () {
+    var options = {
+        zone: document.getElementById('zone_joystick'),
+        threshold: 0.1,
+        position: { left: 50 + '%' },
+        mode:'static',
+        size: 200,
+        color: '#000000'
+    };
+    manager = nipplejs.create(options);
+
+    linear_speed = 0;
+    angular_speed = 0;
+
+    manager.on('start', function (event, nipple) {
+        timer = setInterval(function () {
+        move(linear_speed, angular_speed);
+        }, 25);
+    });
+
+    manager.on('move', function (event, nipple) {
+        max_linear = 1.0; // m/s
+        max_angular = 1.0; // rad/s
+        max_distance = 75.0; // pixels;
+        linear_speed = Math.sin(nipple.angle.radian) * max_linear * nipple.distance/max_distance;
+            angular_speed = -Math.cos(nipple.angle.radian) * max_angular * nipple.distance/max_distance;
+    });
+
+    manager.on('end', function () {
+        if (timer) {
+        clearInterval(timer);
+        }
+        self.move(0, 0);
+    });
+    }
+    window.onload = function () {
+    createJoystick();
+    }
+
+</script>
+</head>
+
+<!-- What the client sees -->
+
+<body>
+    <h1 style="text-align: center; color: blue">Welcome to the Full Interface</h1>
+    <hr>
+    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands!</p>
+    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch.</p>
+    <h3>Connection Status: <span id="status"></span></h3>
+
+    <div class="middleofscreen split left">
+        <h2 style="text-align: center">Basic Joystick For Moving Stretch Robot Base</h2>
+        <br>
+        <div id="zone_joystick" class="center" style="position:relative"></div>
+    </div>
+
+    <div class="middleofscreen split right">
+        <h2 style="text-align: center">Basic Driving Controls</h2>
+        <div class="center" style="background-color: lightblue">
+            <button class="buttondesign" onclick="move(1,0)">Forward</button>
+            <button class="buttondesign" onclick="move(-1,0)">Backwards</button>
+            <button class="buttondesign" onclick="move(0,1)">Turn Left</button>
+            <button class="buttondesign" onclick="move(0,-1)">Turn Right</button>
+            <button class="buttondesign" onclick="move(0,0)">Stop Movement</button>
+        </div>
+
+        <h2 style="text-align: center">Basic Arm Controls</h2>
+        <div class="center" style="background-color: lightgreen">
+            <button class="buttondesign" onclick="">Move lift Up</button>
+            <button class="buttondesign" onclick="">Move Lift Down</button>
+            <button class="buttondesign" onclick="">Extend Arm</button>
+            <button class="buttondesign" onclick="">Collapse Arm</button>
+            <button class="buttondesign" onclick="">Stop Movement</button>
+        </div>
+    </div>
+
+    <div class="bottomofscreen"></div>
+        <button type="button" class="collapsible">Alexa Interface</button>
+        <div class="collapsibletext">
+            <h2 style="text-align: center">How do communicate with your Stretch Robot with Alexa?</h2>
+            <h4>Below, there are a instructions on what commands to use with Alexa</h4>
+            
+            <br>
+
+            <h2>Always make sure you say <strong>Alexa</strong></h2>
+            <p style="font-size: 20px">Then say either...</p>
+            <ul style="font-size: 20px">
+                <li>have Stretch Robot ...</li>
+                <li>tell Stretch Robot to ...</li>
+                <li>ask Stretch Robot to ...</li>
+                <li>make Stretch Robot ...</li>
+            </ul>
+            <p style="font-size: 20px">Then use one of the commands shown below to begin commanding your Stretch Robot!</p>
+
+            <h2 style="text-align: center">Working Commands</h2>
+            <table style="width: 100%">
+                <tr>
+                    <th style="background-color: yellow; width:30%">Command</th>
+                    <th>Function</th>
+                </tr>
+                <tr>
+                    <td style="background-color: yellow">Drive Forward</td>
+                    <td>This will have Stretch Robot drive forward a little</td>
+                </tr>
+                <tr>
+                    <td style="background-color: yellow">Drive Backwards</td>
+                    <td>This will have Stretch Robot drive backwards a little</td>
+                </tr>
+            </table>
+            
+            <br>
+            <br>
+            <br>
+
+            <h2 style="text-align: center">Commands in Development</h2>
+            <table style="width: 100%">
+                <tr>
+                    <th style="background-color: yellow; width:30%">Command</th>
+                    <th>Function</th>
+                </tr>
+                <tr>
+                    <td style="background-color: yellow">Stow Arm</td>
+                    <td>Will move the arm from its current position into the stow position for easier storage and mobility</td>
+                </tr>
+                <tr>
+                    <td style="background-color: yellow">Come Find Me</td>
+                    <td>Will activate an action of the Robot to search the area and locate a person</td>
+                </tr>
+            </table>    
+        </div>
+    
+    
+        <p>Choose which page you would like to travel to.</p>
+        <p><strong>Remeber</strong> you are already on the <mark>Full Interface</mark></p>
+        <div class="changingpagecenter">
+            <a href="joystick.html">
+                <button class="changingpagebuttondesign">Joystick Interface</button>
+            </a>
+
+            <a href="buttons.html">
+                <button class="changingpagebuttondesign">Button Interface</button>
+            </a>
+
+            <a href="alexa.html">
+                <button class="changingpagebuttondesign">Alexa Interface</button>
+            </a>
+
+            <a href="combination.html">
+                <button class="changingpagebuttondesign">Full Interface</button>
+            </a>
+
+            <a href="home.html">
+                <button class="changingpagebuttondesign">Home Page</button>
+            </a>
+
+        </div>
+
+        <hr>
+        <p style="text-align: center">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+    </div>
+<script>
+    //used for collapsible buttons
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alexa Interface</title>
+
+<!-- Styles -->
+
+<style>
+    /* Centers */
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 150px;
+    }
+    /* Basic design for button */
+    .buttondesign{
+        border: 10px solid black;
+        background-color: white;
+        padding: 30px 40px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 18px;
+        font-weight: bolder;
+        margin: 20px 10px;
+    }
+    .changingpagecenter {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    .changingpagebuttondesign{
+        border: 5px solid black;
+        background-color: #eee;
+        padding: 20px 20px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: bolder;
+        margin: 10px 5px;
+        cursor: pointer;
+    }
+    .active, .changingpagebuttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+    /* Add a background color to the button if it is clicked on (add the .active class with JS), 
+    and when you move the mouse over it (hover) */
+    .collapsible {
+        background-color: #eee;
+        color: black;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 22px;
+        font-weight: bolder;
+    }
+    .active, .collapsible:hover {
+        background-color: #ccc;
+    }
+    /* Style the collapsible text, hidden by default */
+    .collapsibletext {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: 0.2s ease-out;
+    }
+    .collapsible:after {
+        content: '\02795';  /* Unicode character for "plus" sign (+) */
+        font-size: 13px;
+        color: black;
+        float: right;
+        margin-left: 5px;
+    }
+    .active:after {
+        content: "\2796"; /* Unicode character for "minus" sign (-) */ 
+    }
+    th, td {
+        border: 4px black;
+        border-style: solid; 
+        text-align: center;
+        font-size: 25px;
+    }
+</style>
+
+    <!-- Includes -->
+  
+<meta charset="utf-8" />
+
+<script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+
+<script type="text/javascript">
+    
+    // Connect to Ros
+
+    var ros = new ROSLIB.Ros({
+    url : 'ws://0.0.0.0:2022'
+    });
+
+    ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+    });
+
+    ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+    });
+
+    ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+    });
+
+</script>
+</head>
+
+
+<body>
+
+    <h1 style="text-align: center; color: blue">Welcome to the Alexa Interface</h1>
+    <hr>
+    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
+    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
+    <h3>Connection Status: <span id="status"></span></h3>
+
+    <br>
+    <h2 style="text-align: center">How do communicate with your Stretch Robot with Alexa?</h2>
+    <h4>Below, there are a instructions on what commands to use with Alexa</h4>
+    <br>
+
+    <button type="button" class="collapsible">How To Begin Your Command</button>
+    <div class="collapsibletext">
+        <h2>Always make sure you say <strong>Alexa</strong></h2>
+        <p style="font-size: 20px">Then say either...</p>
+        <ul style="font-size: 20px">
+            <li>have Stretch Robot ...</li>
+            <li>tell Stretch Robot to ...</li>
+            <li>ask Stretch Robot to ...</li>
+            <li>make Stretch Robot ...</li>
+        </ul>
+        <p style="font-size: 20px">Then use one of the commands shown below to begin commanding your Stretch Robot!</p>
+    </div>
+
+    <button type="button" class="collapsible">Basic Driving Commands!</button>
+    <div class="collapsibletext">
+        <table style="width: 100%">
+            <tr>
+                <th style="background-color: yellow; width:30%">Command</th>
+                <th>Function</th>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Drive Forward</td>
+                <td>This will have Stretch Robot drive forward a little</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Drive Backwards</td>
+                <td>This will have Stretch Robot drive backwards a little</td>
+            </tr>
+        </table>
+    </div>
+
+    <button type="button" class="collapsible">Commands That Are Coming Soon!</button>
+    <div class="collapsibletext">
+        <table style="width: 100%">
+            <tr>
+                <th style="background-color: yellow; width:30%">Command</th>
+                <th>Function</th>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Stow Arm</td>
+                <td>Will move the arm from its current position into the stow position for easier storage and mobility</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Come Find Me</td>
+                <td>Will activate an action of the Robot to search the area and locate a person</td>
+            </tr>
+        </table>
+    </div>
+
+
+    <br>
+    <br>
+    <p>Choose which page you would like to travel to.</p>
+    <p><strong>Remeber</strong> you are already on the <mark>Alexa Interface</mark></p>
+    <div class="changingpagecenter">
+        <a href="joystick.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="combination.html">
+            <button class="changingpagebuttondesign">Full Interface</button>
+        </a>
+
+        <a href="home.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
+    <hr>
+    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+
+<script>
+    //used for collapsible buttons
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    }
+</script>
+</body>
+
+</html>
