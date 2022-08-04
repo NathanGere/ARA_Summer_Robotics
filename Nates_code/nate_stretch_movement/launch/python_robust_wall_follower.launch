@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="nate_stretch_movement" type="robust_wall_follower.py" name="Robust_Wall_Follower_Python_Node" output="screen"/>
+</launch>
