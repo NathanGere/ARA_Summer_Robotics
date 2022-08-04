@@ -29,11 +29,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100px;
+        height: 50px;
     }
     .changingpagebuttondesign{
         border: 5px solid black;
-        background-color: #eee;
+        background-color: hotpink;
         padding: 20px 20px;
         text-align: center;
         text-decoration: none ;
@@ -118,6 +118,26 @@
     document.getElementById("status").innerHTML = "Closed";
     });
 
+        // Connect to Ros Topics
+
+        var alexa_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : '/alexa_msgs',
+    messageType : 'std_msgs/String'
+    });//to inform user alexa was used
+
+    var cmd_vel_topic = new ROSLIB.Topic({
+    ros : ros,
+    name : "/stretch_diff_drive_controller/cmd_vel",
+    messageType : 'geometry_msgs/Twist'
+    });//moves base
+
+    // subscribers
+
+    alexa_topic.subscribe(function(m) {
+    document.getElementById("alexa_msgs").innerHTML = m.data;
+    });
+
 </script>
 </head>
 
@@ -126,14 +146,38 @@
 
     <h1 style="text-align: center; color: blue">Welcome to the Alexa Interface</h1>
     <hr>
+
+    <p style="text-align: center"><strong>Click one of the buttons below to move to a different page</strong></p>
+    <div class="changingpagecenter">
+        <a href="joystick_interface.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons_interface.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa_interface.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="variety_interface.html">
+            <button class="changingpagebuttondesign">Variety Interface</button>
+        </a>
+
+        <a href="home_page.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
+
+    <br>
     <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
     <h3>Connection Status: <span id="status"></span></h3>
 
-    <br>
+    <h3>Last Message Sent By Alexa: <span id="alexa_msgs"></span></h3>
     <h2 style="text-align: center">How do communicate with your Stretch Robot with Alexa?</h2>
-    <h4>Below, there are a instructions on what commands to use with Alexa</h4>
-    <br>
 
     <button type="button" class="collapsible">How To Begin Your Command</button>
     <div class="collapsibletext">
@@ -148,29 +192,37 @@
         <p style="font-size: 20px">Then use one of the commands shown below to begin commanding your Stretch Robot!</p>
     </div>
 
-    <button type="button" class="collapsible">Basic Driving Commands!</button>
+    <button type="button" class="collapsible">All Of Your Commands!</button>
     <div class="collapsibletext">
         <table style="width: 100%">
             <tr>
                 <th style="background-color: yellow; width:30%">Command</th>
-                <th>Function</th>
+                <th>Command's Function</th>
             </tr>
             <tr>
                 <td style="background-color: yellow">Drive Forward</td>
                 <td>This will have Stretch Robot drive forward a little</td>
             </tr>
             <tr>
-                <td style="background-color: yellow">Drive Backwards</td>
+                <td style="background-color: yellow">Drive Back</td>
+                <td>This will have Stretch Robot drive backwards a little</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Rotate Left</td>
+                <td>This will have Stretch Robot drive backwards a little</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Rotate Right</td>
                 <td>This will have Stretch Robot drive backwards a little</td>
             </tr>
         </table>
-    </div>
+    </div>    
 
     <button type="button" class="collapsible">Commands That Are Coming Soon!</button>
     <div class="collapsibletext">
         <table style="width: 100%">
             <tr>
-                <th style="background-color: yellow; width:30%">Command</th>
+                <th style="background-color: yellow; width: 30%">Command</th>
                 <th>Function</th>
             </tr>
             <tr>
@@ -184,35 +236,8 @@
         </table>
     </div>
 
-
-    <br>
-    <br>
-    <p>Choose which page you would like to travel to.</p>
-    <p><strong>Remeber</strong> you are already on the <mark>Alexa Interface</mark></p>
-    <div class="changingpagecenter">
-        <a href="joystick.html">
-            <button class="changingpagebuttondesign">Joystick Interface</button>
-        </a>
-
-        <a href="buttons.html">
-            <button class="changingpagebuttondesign">Button Interface</button>
-        </a>
-
-        <a href="alexa.html">
-            <button class="changingpagebuttondesign">Alexa Interface</button>
-        </a>
-
-        <a href="combination.html">
-            <button class="changingpagebuttondesign">Full Interface</button>
-        </a>
-
-        <a href="home.html">
-            <button class="changingpagebuttondesign">Home Page</button>
-        </a>
-
-    </div>
     <hr>
-    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+    <p style="text-align: center">Author: Kay Wojtowicz &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Organization: UMass Lowell ARA Lab</p>
 
 <script>
     //used for collapsible buttons

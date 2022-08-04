@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>robot_gui_bridge</name>
+  <name>stretch_robot_client_interface</name>
   <version>0.0.0</version>
   <description>The robot_gui_bridge package</description>
 

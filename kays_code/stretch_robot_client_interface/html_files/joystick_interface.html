@@ -26,11 +26,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100px;
+        height: 50px;
     }
     .changingpagebuttondesign{
         border: 5px solid black;
-        background-color: #eee;
+        background-color: hotpink;
         padding: 20px 20px;
         text-align: center;
         text-decoration: none ;
@@ -141,48 +141,46 @@
 </head>
 
 <body>
+
     <h1 style="text-align: center; color: blue">Welcome to the Joystick Interface</h1>
     <hr>
+
+    <p style="text-align: center"><strong>Click one of the buttons below to move to a different page</strong></p>
+    <div class="changingpagecenter">
+        <a href="joystick_interface.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons_interface.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa_interface.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="variety_interface.html">
+            <button class="changingpagebuttondesign">Variety Interface</button>
+        </a>
+
+        <a href="home_page.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
 
     <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
     <h3>Connection Status: <span id="status"></span></h3>
-    
-    <br>
 
-    <h2 style="text-align: center">Basic Joystick For Moving Stretch Robot Base</h2>
+    <h2 style="text-align: center">Joystick For Driving Your Stretch Robot</h2>
     <br>
     <div id="zone_joystick" class="center" style="position:relative"></div>
 
     <br>
 
-    <p>Choose which page you would like to travel to.</p>
-    <p><strong>Remeber</strong> you are already on the <mark>Joystick Interface</mark></p>
-
-    <div class="changingpagecenter">
-        <a href="joystick.html">
-            <button class="changingpagebuttondesign">Joystick Interface</button>
-        </a>
-
-        <a href="buttons.html">
-            <button class="changingpagebuttondesign">Button Interface</button>
-        </a>
-
-        <a href="alexa.html">
-            <button class="changingpagebuttondesign">Alexa Interface</button>
-        </a>
-
-        <a href="combination.html">
-            <button class="changingpagebuttondesign">Full Interface</button>
-        </a>
-
-        <a href="home.html">
-            <button class="changingpagebuttondesign">Home Page</button>
-        </a>
-
-    </div>
     <hr>
-    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+    <p style="text-align: center">Author: Kay Wojtowicz &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Organization: UMass Lowell ARA Lab</p>
 </body>
 
 </html>
