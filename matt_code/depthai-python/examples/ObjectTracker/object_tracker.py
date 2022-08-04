@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
-from ftplib import FTP_PORT
-import os
 from pathlib import Path
 import cv2
 import depthai as dai
 import numpy as np
 import time
 import argparse
-import os.path
-import seeker_return
+from seeker_return import object_receiver
+import os
 
 labelMap = ["background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
             "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
@@ -111,26 +109,22 @@ with dai.Device(pipeline, usb2Mode=True) as device:
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, cv2.FONT_HERSHEY_SIMPLEX)
 
             if label == "person":
-                print("------------------------------------------------------------------------------------\n")
-                print("----------------------------")
-                print("Starting search for person!")
-                print("----------------------------\n")
-                print("----------------------------")
-                print ("Now in object_tracker File")
-                print("----------------------------\n")
 
-                # dir_path = Path('C://home/csrobot/stretch_ws/src/ARA_Summer_Robotics/')
-                # file_name = 'label.txt'
-                # if dir_path.is_dir():
-                    # with open(dir_path.joinpath(file_name), "w") as fp:
-                        # fp.write(label)
-                # else:
-                    # print("Directory doesn't exist!")
-                
-                file1 = open("label.txt", "w+")
-                file1.write(label)
-                file1.close()
-                seeker_return.person_response_returner()
+                with open("label.txt", "w+") as fp:
+                    fp.write(label) 
+                bool = False
+
+                # os.system('roslaunch nate_stretch_movement right_wall_follower.launch')
+
+                var = object_receiver()
+                var.main_object()
+
+                # if bool == True:
+                    # print("End Nate wall follower!\n")
+            else:
+                print("No human found yet!")
+                # Keep Nate's code is still running
+
 
         cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
 
