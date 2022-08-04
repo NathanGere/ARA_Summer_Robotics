@@ -18,7 +18,9 @@ done < $filename
 # print person!!!!!!!!!!!!!!!!!!!!
 if grep -q person "$filename"; then
 
-    echo found human
+    echo ------------------------------------------------------------------------------------
+    echo In bash,passing argument ...person... to read.txt
+    echo ------------------------------------------------------------------------------------
     cd ../../../
     cd matt_human_detector/src/
 

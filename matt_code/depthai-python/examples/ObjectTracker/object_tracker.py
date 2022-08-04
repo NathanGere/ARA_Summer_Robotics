@@ -110,20 +110,51 @@ with dai.Device(pipeline, usb2Mode=True) as device:
 
             if label == "person":
 
-                with open("label.txt", "w+") as fp:
-                    fp.write(label) 
-                bool = False
+                bool1 = False
+                bool2 = False
+                bool3 = False
+                # print("Checkpoint 1")
 
-                # os.system('roslaunch nate_stretch_movement right_wall_follower.launch')
-
-                var = object_receiver()
-                var.main_object()
-
-                # if bool == True:
-                    # print("End Nate wall follower!\n")
-            else:
-                print("No human found yet!")
-                # Keep Nate's code is still running
+                i = 1
+                while i < 3:
+                    # print("Checkpoint 2")
+                    # time.sleep(5)
+                    if label == "person":
+                        # print("Checkpoint 3")
+                        # time.sleep(5)
+                        if i == 1:
+                            # print("Checkpoint 4")
+                            # time.sleep(5)
+                            bool1 = True
+                            i+=1
+                            with open("check_save.txt", "w+") as fp:
+                                fp.write("True")
+                            # print(i)
+                            # print(bool1)
+                            if i == 2:
+                                # print("Checkpoint 5")
+                                # time.sleep(5)
+                                with open("check_save.txt", "r") as fp:
+                                    if fp.read() == "True":
+                                        # print("Its True!")
+                                        bool2 = True
+                                        i+=1
+                                        # print(i)
+                                        # print(bool2)
+                                if i == 3:
+                                    # print("Checkpoint 6")
+                                    # time.sleep(5)
+                                    with open("check_save.txt", "r") as fp:
+                                        if fp.read() == "True":
+                                            bool3 = True
+                
+                                            if i == 3 and bool1 == True and bool2 == True and bool3 == True:
+                                                # print("Checkpoint 7")
+                                                with open("label.txt", "w+") as fp:
+                                                    fp.write(label)
+                                                    
+                                                var = object_receiver()
+                                                var.main_object()
 
 
         cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
