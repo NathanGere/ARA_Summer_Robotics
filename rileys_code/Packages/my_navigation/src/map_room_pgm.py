@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import rospy
-from time import time
+from time import time, sleep
 from map_enclosed import map
 # from map_explorer import movement
 
 
 # Params
-#get_map_service_name = rospy.get_param("~get_map_service_name", "static_map")       # Topic for GetMap service
+get_map_service_name = rospy.get_param("~get_map_service_name", "static_map")       # Topic for GetMap service
 #twist_topic = rospy.get_param("~twist_topic", "/cmd_vel")                           # Topic for the Command velocity
 #laser_topic = rospy.get_param("laser_topic", "/scan")                               # Topic for the LaserScan
 #obstacle_avoid_distance = rospy.get_param("~obstacle_avoid_distance", 1.0)          # Distance at which obstacle avoidance kicks in (m)
@@ -19,7 +19,7 @@ from map_enclosed import map
 
 
 # Temp variable because the param doesnt exist yet
-time_before_intervention = 1020
+time_before_intervention = 121
 
 
 # This file is the main file that will do the enitre autonomous mapping based off map_enclosed and map_explore
@@ -41,7 +41,8 @@ if __name__ == "__main__":
           #movement.explore(explore_time)
           #map_enclosed = map.is_enclosed_from_scratch()
           current_time = int(time())
-          if start_time + time_before_intervention_sec <= current_time:
+          time_left = start_time + time_before_intervention_sec - current_time
+          if time_left <= 0:
                # Time to ask for intervention
                print("It has been {} minutes and I havent finished.".format(time_before_intervention))
                print("You can see the current version of the map in RViz.")
@@ -55,10 +56,32 @@ if __name__ == "__main__":
                     # Publishing the map so it can be saved by map_saver
                     #print("Publishing Closed Map.")
                     #map.publish_closed_map()
-                    print('Enclosed Map Written as "make a text variable for the enclosed maps file name"')
+                    #print('Enclosed Map Written as "make a text variable for the enclosed maps file name"')
                     break
                # Reset the intervention timer by making start_time the current time
                start_time = int(time())
+          # 10 second countdown
+          elif time_left <= 10:
+               print(int(time_left))
+               sleep(1)
+          # Hour mark
+          elif time_left % 3600 == 0:
+               hours_left = int(time_left/3600)
+               if hours_left == 1:
+                    print("{} hour left...".format(hours_left))
+               else:
+                    print("{} hours left...".format(hours_left))
+               sleep(1)
+          # Minute mark if under an hour
+          elif time_left % 60 == 0 and time_left < 3600:
+               minutes_left = int(time_left/60)
+               if minutes_left == 1:
+                    print("{} minute left...".format(minutes_left))
+               else:
+                    print("{} minutes left...".format(minutes_left))
+               sleep(1)
+          
+               
 
      print("Completed.")
 

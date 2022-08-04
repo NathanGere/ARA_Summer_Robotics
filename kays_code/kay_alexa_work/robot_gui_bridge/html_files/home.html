@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HomePage</title>
+
+<!-- Styles -->
+
+<style>
+    /* Centers */
+    .center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 150px;
+    }
+    /* Basic design for button */
+    .buttondesign{
+        border: 10px solid black;
+        background-color: white;
+        padding: 30px 40px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 18px;
+        font-weight: bolder;
+        margin: 20px 10px;
+    }
+    .changingpagecenter {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100px;
+    }
+    .changingpagebuttondesign{
+        border: 5px solid black;
+        background-color: hotpink;
+        padding: 30px 50px;
+        text-align: center;
+        text-decoration: none ;
+        display: inline-block;
+        font-size: 25px;
+        font-weight: bolder;
+        margin: 10px 5px;
+        cursor: pointer;
+    }
+    .active, .changingpagebuttondesign:hover {
+        background-color: black;
+        color: white;
+    }
+    /* Add a background color to the button if it is clicked on (add the .active class with JS), 
+    and when you move the mouse over it (hover) */
+    .collapsible {
+        background-color: #eee;
+        color: black;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 22px;
+        font-weight: bolder;
+    }
+    .active, .collapsible:hover {
+        background-color: #ccc;
+    }
+    /* Style the collapsible text, hidden by default */
+    .collapsibletext {
+        padding: 0 18px;
+        display: none;
+        overflow: hidden;
+        background-color: white;
+        max-height: 0;
+        overflow: hidden;
+        transition: 0.2s ease-out;
+    }
+    .collapsible:after {
+        content: '\02795';  /* Unicode character for "plus" sign (+) */
+        font-size: 13px;
+        color: black;
+        float: right;
+        margin-left: 5px;
+    }
+    .active:after {
+        content: "\2796"; /* Unicode character for "minus" sign (-) */ 
+    }
+</style>
+
+    <!-- Includes -->
+  
+<meta charset="utf-8" content="width=device-width, initial-scale=1"/>
+
+<script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+
+<script type="text/javascript">
+    
+    // Connect to Ros
+
+    var ros = new ROSLIB.Ros({
+    url : 'ws://localhost:2022'
+    });
+
+    ros.on('connection', function() {
+    document.getElementById("status").innerHTML = "Connected";
+    });
+
+    ros.on('error', function(error) {
+    document.getElementById("status").innerHTML = "Error";
+    });
+
+    ros.on('close', function() {
+    document.getElementById("status").innerHTML = "Closed";
+    });
+</script>
+</head>
+
+<!-- What the client sees -->
+
+<body>
+    <h1 style="text-align: center; color: blue;">Welcome to our Stretch Robot Home Page</h1>
+    <hr>
+    <h2 style="text-align: center">Which Client Interface Are You Looking For?</h2>
+
+    <div class="changingpagecenter">
+        <a href="joystick.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="combination.html">
+            <button class="changingpagebuttondesign">Full Interface</button>
+        </a>
+
+    </div>
+
+    <br>
+    <hr>
+    <br>
+
+    <h3 style="text-align: center">If You Would Like A Discription Of The Interfaces?</h3>
+    <h4 style="text-align: center">Select The Corresponding Dropdown Menu Below</h4>
+
+    <br>
+    <button type="button" class="collapsible">What is the Joystick Interface?</button>
+    <div class="collapsibletext">
+        <p>This interface includes a single joystick which can be used to drive the base Of
+            your Stretch Robot.
+        </p>
+    </div>
+
+    <button type="button" class="collapsible">What is the Button Interface?</button>
+    <div class="collapsibletext">
+        <p>This interface includes a varity of buttons that will send commands directly to
+            your Stretch Robot so that you can control it directly as well as use known actions
+            or combination of movements.
+        </p>
+    </div>
+
+    <button type="button" class="collapsible">What is the Alexa Interface?</button>
+    <div class="collapsibletext">
+        <p>This interface will provide guidlines and instructions on how to communicate 
+            with your Stretch Robot with the help of Alexa skills
+        </p>
+    </div>
+
+    <button type="button" class="collapsible">What is the Full Interface?</button>
+    <div class="collapsibletext">
+        <p>This interface is the combination of the other three interfaces included</p>
+    </div>
+
+    <br>
+    <br>
+
+    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
+    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
+    <h3>Connection Status: <span id="status"></span></h3>
+    
+    <hr>
+
+    <p style="text-align: center">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+
+<script>
+    //used for collapsible buttons
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
+
+<!-- change url to 192.168.50.204 instead of localhost to use different device-->

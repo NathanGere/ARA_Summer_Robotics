@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from operator import is_
 import rospy
 from geometry_msgs.msg  import Point
 from nav_msgs.msg       import OccupancyGrid
@@ -13,116 +14,128 @@ occupied    =   int(100)
 class map:
 
     def __init__(self, get_map_topic_name):
-        # Basic init funtion that sets the map class
-        self.map = OccupancyGrid()
-        self.wall_gaps = []
+        # General
         self.get_map_topic_name = get_map_topic_name
-        self.update()
-        self.uncropped_map_info = self.map.info
+
+        # Original_Map
+        self.original_map_exists = False
+        self.original_map = OccupancyGrid()
         self.uncropped_indexes = []
-        self.crop_map(print_meta_data=False)
 
-    def map_is_enclosed(self, print_process, print_final_map):
-        part_one_map = self.map_is_enclosed_initial()
+        # Cropped Map
+        self.cropped_map_exists = False
+        self.cropped_map = OccupancyGrid()
 
-        # Optional printing to showcase the process
-        if print_process:
-            self.print_map_terminal(part_one_map)
+        # Formatted Map
+        self.formatted_map_exists = False
+        self.formatted_map = OccupancyGrid()
+        self.wall_gaps = []
 
-        return self.map_is_enclosed_advanced(part_one_map, print_process, print_final_map)
+        # Current Map
+        self.current_map_exists = False
+        self.current_map = OccupancyGrid()
+        
+        # Function calls
+        self.update(first_time=True)
+        self.crop_map()
 
-    def map_is_enclosed_initial(self): 
-        # Make a shallow copy of our map 
-        map = []
-        for index in self.map.data:
-            map.append(index)
-        height = self.map.info.height 
-        width = self.map.info.width
+    # This function takes the cropped_map or formatted_map and returns true if it is enclosed, false if it is not enclosed
+    # @param is_formatted: tells the function is the map is a formatted_map or cropped_map. True=formatted_map, Flase=cropped_map
+    def map_is_enclosed(self, map, is_formatted=False):
+        if ( (is_formatted and self.formatted_map_exists) or (not is_formatted and self.cropped_map_exists)):
+            # PART ONE
+            height, width = map.info.height, map.info.width
+            last_index = height * width
+            # Make a shallow copy of our map 
+            part_one_map = []
+            for index in map.data:
+                part_one_map.append(index)
+            # Left-Right Scan
+            for rows in range(width):
+                for digit in range(height):
+                    right_approach_index = rows*height + digit
+                    right_approach_value = part_one_map[right_approach_index]
+                    left_approach_index  = height - right_approach_index
+                    left_approach_value  = part_one_map[left_approach_index]
+                    right_hit_wall, left_hit_wall = False, False
 
-        # Left-Right Scan
-        for rows in range(width):
-            for digit in range(height):
-                index = rows*height + digit
-                if map[index] != occupied:
-                    if map[index] == empty:
-                        map[index] = unknown
-                else:
-                    break
-       
-        # Right-Left Scan
-        for rows in range(width):
-            for digit in range(height):
-                index = height - (rows*height + digit)
-                if map[index] != occupied:
-                    if map[index] == empty:
-                        map[index] = unknown
-                else:
-                    break
+                    if right_approach_value != occupied and right_hit_wall is False:
+                        if right_approach_value == empty:
+                            right_approach_value = unknown
+                    else:
+                        right_hit_wall = True
+                    if left_approach_value != occupied and left_hit_wall is False:
+                        if left_approach_value == empty:
+                            left_approach_value = unknown
+                    else:
+                        left_hit_wall = True
+                    if right_hit_wall and left_hit_wall:
+                        break
+            # Top-Bottom Scan
+            for columns in range(height):
+                for digit in range(width):
+                    downward_approach_index = columns + (digit*height)
+                    downward_aprroach_value = part_one_map[downward_approach_index]
+                    upward_approach_index   = width - downward_approach_index
+                    upward_approach_value   = part_one_map[upward_approach_index]
+                    up_hit_wall, down_hit_wall = False, False
+
+                    if downward_aprroach_value != occupied and down_hit_wall is False:
+                        if downward_aprroach_value == empty:
+                            downward_aprroach_value = unknown
+                    else:
+                        down_hit_wall = True
+                    if upward_approach_value != occupied and up_hit_wall is False:
+                        if upward_approach_value == empty:
+                            upward_approach_value = unknown
+                    else:
+                        up_hit_wall = True
+                    if up_hit_wall and down_hit_wall:
+                        break
+            # Optional printing to showcase the process
+            if print_is_enclosed_process:
+                print("After part one")
+                self.print_map_terminal(part_one_map, height, width)
+
+            # PART TWO
+            while True:
+                seen_an_empty = False
+                empty_touches_an_unknown = False
+                # go through the data and check to see if any empty touches an unknown
+                for index in range(last_index):
+                    if part_one_map[index] == empty:
+                        # Although calculating the surrounding indexes would normally reach out of bounds,
+                        # the map_is_enclosed_initial function ensures that there are no empties on the edges
+                        seen_an_empty = True
+                        index_right, index_left  = index + 1, index - 1
+                        index_below, index_above = index + height, index - height
+                        # if an empty touches an unknown then turn it into an unknown
+                        if (part_one_map[index_above] == unknown or part_one_map[index_below] == unknown or 
+                        part_one_map[index_left]  == unknown or part_one_map[index_right] == unknown):
+                            empty_touches_an_unknown = True
+                            part_one_map[index] = unknown
+                if not empty_touches_an_unknown:
+                    if print_final_terminal_map is True:
+                        self.print_map_terminal(part_one_map, height, width)
+                    if seen_an_empty is True:
+                        break  # Time to run Edge cases
+                    else:
+                        return False
+                # Printing of the whole process, normally not needed
+                if print_is_enclosed_process is True:
+                    self.print_map_terminal(part_one_map, height, width)
+            # We only get here if we think the map is enclosed, edge cases go here
+            map_is_enclosed_double_checked = self.map_is_enclosed_edge_cases(part_one_map)
+            return map_is_enclosed_double_checked
+        else:
+            if is_formatted:
+                print("map_is_enclosed failed because formatted_map does not exist and is_formatted was marked as true")
+                print("Make sure to use format_map before calling map_is_enclosed with is_formatted marked as true.")
+            else:
+                print("map_is_enclosed failed because cropped_map does not exist: make sure crop_map is called before using map_is_enclosed.")
     
-        # Top-Bottom Scan
-        for columns in range(height):
-            for digit in range(width):
-                index = columns + (digit*height)
-                if map[index] != occupied:
-                    if map[index] == empty:
-                        map[index] = unknown
-                else:
-                    break
-    
-        # Bottom-Up Scan
-        for columns in range(height):
-            for digit in range(width):
-                index = width - (columns + (digit*height))
-                if map[index] != occupied:
-                    if map[index] == empty:
-                        map[index] = unknown
-                else:
-                    break
-     
-        return (map)
-
-    def map_is_enclosed_advanced(self, map, print_process, print_final_map):
-        index = 0
-        width = self.map.info.width
-        height = self.map.info.height
-        last_index = height * width
-
-        while True:
-            seen_an_empty = False
-            empty_touches_an_unknown = False
-            # go through the data and check to see if any empty touches an unknown or the edge of the map
-            for index in range(last_index):
-                if map[index] == empty:
-                    # Although calculating the surrounding indexes would normally reach out of bounds,
-                    # the map_is_enclosed_initial function ensures that there are no empties on the edges
-                    seen_an_empty = True
-                    index_right = index + 1
-                    index_left  = index -1
-                    index_below = index + height
-                    index_above = index - height
-                    # if an empty touches an unknown then turn it into an unknown
-                    if map[index_above] == unknown or map[index_below] == unknown or map[index_left]  == unknown or map[index_right] == unknown:
-                        empty_touches_an_unknown = True
-                        map[index] = unknown
-
-            if not empty_touches_an_unknown:
-                if print_final_map:
-                    self.print_map_terminal(map)
-                if seen_an_empty:
-                    break  # Time to run Edge cases
-                else:
-                    return False
-
-            # Printing of the whole process, normally not needed
-            if print_process:
-                self.print_map_terminal(map)
-            
-
-        # We only get here if we think the map is enclosed, edge cases for false positives go here
-        map_is_enclosed_double_checked = self.map_is_enclosed_false_positive_edge_cases(map)
-        return map_is_enclosed_double_checked
-
-    def map_is_enclosed_false_positive_edge_cases(self, map):
+    # This function deals with edge cases from map_is_enclosed
+    def map_is_enclosed_edge_cases(self, map):
         # Edge case in which small enclosures remain but they should be ignored
         # Robot is about 11 by 11 pixels large, so anything smaller than that should be discarded 
         # as there is no way that the robot is in that enclosure
@@ -130,7 +143,7 @@ class map:
         for points in map:
             is_a_row_of_eleven = True
             if points == empty:
-                # Move 4 pixels left and right to see if we are the center of an 11 by 11 square
+                # Move 4 pixels left and right to see if we are the center of an 11 by 11 row
                 for i in range(-4, 5):
                     if map[index + i] != empty:
                         is_a_row_of_eleven = False
@@ -139,34 +152,29 @@ class map:
             index += 1  
         return False
 
-        # Passed all edge cases
-        return True
-
+    # This function finds wall gaps in the cropped map and populates self.wall_gaps with the indexes of those gaps
     def find_wall_gaps(self):
-        index = 0
-        width = self.map.info.width
-        height = self.map.info.height
-        last_index = height * width
-        seen_an_empty = False
-        empty_touches_an_unknown = False
-        # go through the data and check to see if any empty touches an unknown or the edge of the map
-        for index in range(last_index):
-            if self.map.data[index] == empty:
-                # Although calculating the surrounding indexes would normally reach out of bounds,
-                # the map_is_enclosed_initial function ensures that there are no empties on the edges
-                seen_an_empty = True
-                index_right = index + 1
-                index_left  = index - 1
-                index_below = index + height
-                index_above = index - height
-                # if an empty touches an unknown then turn it into an unknown
-                if self.map.data[index_above] == unknown or self.map.data[index_below] == unknown or self.map.data[index_left]  == unknown or self.map.data[index_right] == unknown:
-                    self.wall_gaps.append(index)
+        if self.cropped_map_exists:
+            height, width = self.cropped_map.info.height, self.cropped_map.info.width
+            last_index = height * width
+            # go through the data and check to see if any empty touches an unknown
+            for index in range(last_index):
+                if self.cropped_map.data[index] == empty:
+                    index_right,  index_left   =  index + 1     ,  index - 1
+                    index_below,  index_above  =  index + height,  index - height
+                    # if an empty touches an unknown then its a gap in the wall
+                    if (self.cropped_map.data[index_above] == unknown or 
+                        self.cropped_map.data[index_below] == unknown or 
+                        self.cropped_map.data[index_left]  == unknown or
+                        self.cropped_map.data[index_right] == unknown):
+                        self.wall_gaps.append(index)
+        else:
+            print("find_wall_gaps has failed: cropped_map does not exist. Make sure crop_map is called before calling this function.")
 
-    def update(self):
-        #update the map so that it matches what we are getting
+    # This function uses the GetMap service to update self.current_map parameter
+    # @param first_time: optional and only used in __init__ so that the first time this function is called it populates original_map
+    def update(self, first_time=False):
         rospy.wait_for_service(self.get_map_topic_name)
-       
         try:
             get_map_srv = rospy.ServiceProxy(self.get_map_topic_name, GetMap)
             map_object  = GetMapRequest()
@@ -174,83 +182,83 @@ class map:
             result_map  = get_map_srv(map_object).map
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s"%e)
-        self.map = result_map
-
-    def print_map_grid(self):
-        # Ignores all the unknowns
-        grid = self.map.data
-        print(grid)
-
-    def crop_map(self, print_meta_data):
-        # Take the full map and crop out the rows and columns that are solely unknown
-        # After this is called, self.map is cropped
-        width  = self.map.info.width
-        height = self.map.info.height
-        grid = self.map.data
-        original_length = len(grid)
-        row_cropped_grid   = []
-        final_cropped_grid = []
-        rows_deleted    = 0
-        columns_deleted = 0
-        # Crop out rows
-        for rows in range(height):
-            row_in_question = []
-            row_is_relevant = False
-            for digit in range(width):
-                index = rows*width + digit
-                row_in_question.append(grid[index])
-                if grid[index] != unknown:
-                    row_is_relevant = True
-            if row_is_relevant:
-                for index in row_in_question:
-                    row_cropped_grid.append(index)
-            else:
-                rows_deleted += 1
-        # Update the size of the array
-        height -= rows_deleted
-
-        # Crop out columns
-        for columns in range(width):
-            column_in_question = []
-            column_is_relevant = False
-            for digit in range(height):
-                index = columns + (digit*width)
-                column_in_question.append(row_cropped_grid[index])
-                if row_cropped_grid[index] != unknown:
-                    column_is_relevant = True
-            if column_is_relevant:
-                for indexx in range(len(column_in_question)):
-                    final_cropped_grid.append(column_in_question[indexx])
-                    self.uncropped_indexes.append(columns * width + indexx)
-            else:
-                columns_deleted += 1
-        # Update size of the array
-        width -= columns_deleted
-
-        # Set values
-        self.map.data = final_cropped_grid
-        self.map.info.height = height
-        self.map.info.width = width
-
-        #Printing
-        new_length = len(final_cropped_grid)
-        if print_meta_data:
-            print("\n\nCropped the old map. Heres the new map's data:")
-            self.map_info_no_array()
-            print("Rows Deleted: {}\t Columns Deleted: {}".format(rows_deleted, columns_deleted))
-            print("Data reduction of {}% !!!".format(100 - float(new_length)/original_length * 100))
+        if first_time:
+            self.original_map = result_map
+            self.original_map_exists = True
         else:
-            print("\nMap Cropped")
+            self.current_map = result_map
+            self.current_map_exists = True
 
-    def map_info_no_array(self):
+    # This function crops the original_map and stores the result in self.cropped_map
+    def crop_map(self):
+        if self.original_map_exists:
+            # Take the original_map and crop out the rows and columns that are solely unknown
+            height, width = int(self.original_map.info.height), int(self.original_map.info.width)
+            grid = self.original_map.data
+            original_length = len(grid)
+            row_cropped_grid, final_cropped_grid  = [], []
+            rows_deleted, columns_deleted = 0, 0
+            # Crop out rows
+            for rows in range(height):
+                row_in_question = []
+                row_is_relevant = False
+                for digit in range(width):
+                    index = rows*width + digit
+                    row_in_question.append(grid[index])
+                    if grid[index] != unknown:
+                        row_is_relevant = True
+                if row_is_relevant:
+                    for loop_index in row_in_question:
+                        row_cropped_grid.append(loop_index)
+                        self.uncropped_indexes.append(index)
+                else:
+                    rows_deleted += 1
+            # Update the size of the array
+            height -= rows_deleted
+
+            # Crop out columns
+            for columns in range(width):
+                column_in_question = []
+                column_is_relevant = False
+                for digit in range(height):
+                    index = columns + (digit*width)
+                    column_in_question.append(row_cropped_grid[index])
+                    if row_cropped_grid[index] != unknown:
+                        column_is_relevant = True
+                if column_is_relevant:
+                    for loop_index in range(len(column_in_question)):
+                        final_cropped_grid.append(column_in_question[loop_index])
+                else:
+                    columns_deleted += 1
+            # Update size of the array
+            width -= columns_deleted
+
+            # Set values
+            self.cropped_map.data = final_cropped_grid
+            self.cropped_map.info.height, self.cropped_map.info.width = height, width
+            self.cropped_map_exists = True
+            #Printing
+            new_length = len(final_cropped_grid)
+            if print_crop_data:
+                print("\n\nCropped the old map. Heres the new map's data:")
+                self.map_info_no_array(self.cropped_map)
+                print("Rows Deleted: {}\t Columns Deleted: {}".format(rows_deleted, columns_deleted))
+                print("Data reduction of {}% !!!".format(100 - float(new_length)/original_length * 100))
+            else:
+                print("\nMap Cropped")
+        else:
+            print("crop_map has failed: original_map does not exist. Make sure __init__ is called before calling this function.")
+
+    # This function gives basic metadata on the map given to it
+    def map_info_no_array(self, map):
         # Getting values
-        height = self.map.info.height
-        width  = self.map.info.width
-        total  = len(self.map.data)
+        height = map.info.height
+        width  = map.info.width
+        total  = len(map.data)
         unknown_count = 0
         empty_count = 0
         occupied_count = 0
-        for value in self.map.data:
+        for value in map.data:
             if value == unknown:
                 unknown_count += 1
             elif value == empty:
@@ -262,86 +270,78 @@ class map:
         print("Height: {}\t Width: {}\t Total Points: {} integers.".format(height, width, total))
         print("Unknown: {}\t Empty: {}\t Occupied: {}".format(unknown_count, empty_count, occupied_count))
    
-    def print_map_terminal(self, map):
-        width = self.map.info.width
-        height = self.map.info.height
+    # This map deals prints a version of the given map to the terminal using certain characters to represent data
+    def print_map_terminal(self, map, height, width):
+        unknown_ch, wall_ch, empty_ch, gap_ch = ' ', '#', '.', '0'
         map_to_print_string = "\n\nCharacterized Map:\n\t"
-        unknown_ch = ' '
-        wall_ch    = '#'
-        empty_ch   = '.'
-        gap_ch     = '0'
         for row in range(width):
             for digit in range(height):
                 index = row * height + digit
+                value = map[index]
                 if self.wall_gaps.count(index):
                     map_to_print_string += gap_ch
-                elif map[index] == occupied:
+                elif value == occupied:
                     map_to_print_string += wall_ch
-                elif map[index] == empty:
+                elif value == empty:
                     map_to_print_string += empty_ch
-                elif map[index] == unknown:
-                    map_to_print_string += unknown_ch
-                
+                elif value == unknown:
+                    map_to_print_string += unknown_ch  
             map_to_print_string += '\n\t'
         print(map_to_print_string)
 
-    def get_map_data(self):
-        # Function to make getting the maps data easier for functions outside this class
-        return self.map.data
-
-    def index_to_pose(self, index):
+    # DEAL WITH This function doesnt work yet :)
+    def index_to_point(self, index):
+        #NOTE no idea if this works yet
         # Returns the xy coord of the index given from the cropped map
         index_for_uncropped_map = self.uncropped_indexes[index]
+        print(index_for_uncropped_map)
         resolution = self.uncropped_map_info.resolution
-        height = self.uncropped_map_info.width
-        width = self.uncropped_map_info.height
+        height = 4000 #self.uncropped_map_info.width
+        width = 4000 #self.uncropped_map_info.height
         origin = self.uncropped_map_info.origin         
         xy_coord = Point()
         x_coord = origin.position.x + resolution * (index_for_uncropped_map%width)
-        y_coord = origin.position.y + resolution * (height - (index_for_uncropped_map/width))
-
-        #debug
-        print("big_map_index: {}".format(index_for_uncropped_map))
-        print("height: {}".format(height))
-        print("width: {}".format(width))
-        print("")
-
-
-
-        xy_coord.x = x_coord
-        xy_coord.y = y_coord
+        y_coord = origin.position.y + resolution * (index_for_uncropped_map/width)
+        xy_coord.x, xy_coord.y = x_coord, y_coord
         return xy_coord
 
-    def cut_losses_and_format_map(self):
-        ###This should turn any possible wall gap into a wall and then return a new formatted map###
-        for points in self.wall_gaps:
-            self.map.data[points] = occupied
-        self.wall_gaps = []
+    # This function takes cropped_map and turns wall gaps into walls, storing the result in self.formatted_map
+    def format_map(self):
+        if self.cropped_map_exists:
+            self.formatted_map.header = self.cropped_map.header
+            self.formatted_map.info   = self.cropped_map.info
+            formatted_map_data = []
+            for data_points in self.cropped_map.data:
+                formatted_map_data.append(data_points)
+            for points in self.wall_gaps:
+                formatted_map_data[points] = occupied
+            self.wall_gaps = []
+            self.formatted_map.data = formatted_map_data
+            self.formatted_map_exists = True
+        else:
+            print("format_map has failed: cropped_map does not exist. Make sure crop_map is called before calling this function.")
 
-    def publish_closed_map(self):
-        # Idk why but I have to swap width and height, its weird dont ask
-        x = self.map.info.width 
-        self.map.info.width = self.map.info.height
-        self.map.info.height = x
-
-        # Map needs to be flipped as well, once again dont ask
-        fmap = OccupancyGrid()
-        fmap.header = self.map.header
-        fmap.info = self.map.info
+    # This function publishes the given map so it can be saved as a PGM and YAML file
+    def publish_map(self, map):
+        pub_map = OccupancyGrid()
+        pub_map.header = map.header
+        pub_map.info = map.info
         map_data = []
-        for index in self.map.data:
+        for index in map.data:
             map_data.append(index)
-        fmap.data = map_data
-
-        # For each row
-        for row in range(fmap.info.height):
+        pub_map.data = map_data
+        # Width and height have to be swapped for pgm format
+        pub_map.info.width, pub_map.info.height = pub_map.info.height, pub_map.info.width
+        height, width = pub_map.info.height, pub_map.info.width
+        # Map needs to be flipped as well for pgm format
+        for row in range(height):
             # flip the row
-            for index in range(fmap.info.width):
-                start_index = row * fmap.info.width
-                end_index = row * fmap.info.width + fmap.info.width -1
-                fmap.data[start_index + index] = self.map.data[end_index - index]
+            for index in range(width):
+                start_index = row * width
+                end_index = start_index + width -1
+                pub_map.data[start_index + index] = map.data[end_index - index]
 
-        closed_map_pub.publish(fmap)
+        closed_map_pub.publish(pub_map)
         rospy.spin()
 
 
@@ -356,27 +356,29 @@ if __name__ == "__main__":
     print_final_terminal_map  = bool(rospy.get_param("~print_final_terminal_map", True))    
 
     # All "if 0:"s below are functional programs that I dont want to run for now, but I want them saved
-    if 0: 
+    if 1: 
         # Checking if map is enclosed and if not, making it enclosed
         gmap = map(get_map_topic_name)
-        is_enclosed =  gmap.map_is_enclosed(print_is_enclosed_process, print_final_terminal_map)
+        is_enclosed =  gmap.map_is_enclosed(gmap.cropped_map)
         print("\nMap_is_Enclosed: {}.\n".format(is_enclosed))
         if is_enclosed is not True:
             gmap.find_wall_gaps()
             print("Formatting Map")
-            gmap.cut_losses_and_format_map()
-            is_enclosed =  gmap.map_is_enclosed(print_is_enclosed_process, print_final_terminal_map)
+            gmap.format_map()
+            is_enclosed =  gmap.map_is_enclosed(gmap.formatted_map, is_formatted=True)
             print("\nMap_is_Enclosed: {}.\n".format(is_enclosed))
-
-
         # Publishing the map so it can be saved by map_saver
-        #print("Publishing Closed Map.")
-        #gmap.publish_closed_map()
-    if 1:
+        print("Publishing Closed Map.")
+        gmap.publish_map(gmap.formatted_map)
+    if 0:
+        # Testing index to coord
         gmap = map(get_map_topic_name)
-        coordinate = gmap.index_to_pose(32456)
-        print("Origin: [{}, {}]".format(gmap.uncropped_map_info.origin.position.x, gmap.uncropped_map_info.origin.position.y))
-        print("Point:  [{}, {}]".format(coordinate.x, coordinate.y))
+        print(gmap.uncropped_indexes)
+        print(len(gmap.uncropped_indexes))
+        for i in range(0,500):
+            coordinate = gmap.index_to_point(i)
+            #print("Origin: [{}, {}]".format(gmap.uncropped_map_info.origin.position.x, gmap.uncropped_map_info.origin.position.y))
+            print("Point {}:  [{}, {}]".format(i,coordinate.x, coordinate.y))
 
 #TODO:
 ##############################################################################################################
@@ -388,11 +390,8 @@ if __name__ == "__main__":
 ### service, I should get rid of the map_server in the launch file and instead solely use the GetMap       ###
 ### service as it is already subscribed to the map topic that rviz will provide when navigation is run     ###
 ##############################################################################################################
-### Odd thing to note: height and width need to be swapped in this program before working with data points ###
-### and once again when converting back to an occupancy grid message to publish                            ###
-##############################################################################################################
 
+# TODO function to give xy coords from the index in the cropped map array 
+# NOTE currently facing porblems with the uncropped_indexes array
 
-# function to give xy coords from the index in the cropped map array 
-
-
+### Currently woking on:
