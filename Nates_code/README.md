@@ -11,6 +11,7 @@ This will open Rviz showing a border and a laser scan of the world you are loadi
 
 ## WALL FOLLOWER
 
+```bash
 #Terminal 1:
 roslaunch stretch_gazebo gazebo.launch world:="/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/Gazebo_worlds/DuckieTown_world.world"
 ```
