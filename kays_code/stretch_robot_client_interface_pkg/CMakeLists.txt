@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(stretch_robot_client_interface)
+project(stretch_robot_client_interface_pkg)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)

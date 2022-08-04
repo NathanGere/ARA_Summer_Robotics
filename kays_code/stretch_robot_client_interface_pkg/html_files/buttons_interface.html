@@ -39,11 +39,11 @@
     .changingpagebuttondesign{
         border: 5px solid black;
         background-color:  hotpink;
-        padding: 20px 20px;
+        padding: 20px 50px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
-        font-size: 14px;
+        font-size: 20px;
         font-weight: bolder;
         margin: 10px 5px;
         cursor: pointer;
@@ -95,6 +95,7 @@
 <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
 
 <script type="text/javascript">
+       
     // Connect to Ros
 
     var ros = new ROSLIB.Ros({
@@ -102,32 +103,45 @@
     });
 
     ros.on('connection', function() {
-    document.getElementById("status").innerHTML = "Connected";
+        document.getElementById("status").innerHTML = "Connected";
     });
 
     ros.on('error', function(error) {
-    document.getElementById("status").innerHTML = "Error";
+        document.getElementById("status").innerHTML = "Error";
     });
 
     ros.on('close', function() {
-    document.getElementById("status").innerHTML = "Closed";
+        document.getElementById("status").innerHTML = "Closed";
     });
 
     // Connect to Ros Topics
 
     var cmd_vel_topic = new ROSLIB.Topic({
-    ros : ros,
-    name : '/stretch_diff_drive_controller/cmd_vel',
-    messageType : 'geometry_msgs/Twist'
+        ros : ros,
+        name : '/stretch_diff_drive_controller/cmd_vel',
+        messageType : 'geometry_msgs/Twist'
     });//moves base
 
+    var warning_topic = new ROSLIB.Topic({
+        ros : ros,
+        name : '/client_warning',
+        messageType : 'std_msgs/String'
+    });//to publish warnings while operating
+
     var arm_topic = new ROSLIB.Topic({
-    ros : ros,
-    name : '/stretch_arm_controller/follow_joint_trajectory/goal',
-    messageType : 'control_msgs/FollowJointTrajectoryGoal'
+        ros : ros,
+        name : '/stretch_arm_controller/follow_joint_trajectory/goal',
+        messageType : 'control_msgs/FollowJointTrajectoryGoal'
     });//to connect to the arm
 
+    // Subscribers
+
+    warning_topic.subscribe(function(m) {
+        document.getElementById("warning_msgs").innerHTML = m.data;
+    });
+
     //created functions
+
     move = function (linear_vel, angular_vel) {
     var twist = new ROSLIB.Message({
         linear: {
@@ -149,6 +163,13 @@
         
     });
     cmd_vel_topic.publish(arm_goal);
+    }
+
+    clear_msgs = function(){
+    var str = new ROSLIB.Message({
+        data: ''
+    });
+    warning_topic.publish(str);
     }
 
 </script>
@@ -187,6 +208,10 @@
     <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
     <h3>Connection Status: <span id="status"></span></h3>
+
+    <h2>Check Here For Warnings: <span id="warning_msgs" style="background-color: red;"></span></h2>
+    <p style="font-weight: bold">After forced stop, you may need to press a button repeatedly to move Stretch</p>
+    <button type="button" class="buttondesign" style="font-size: 14px; width: 175px; height: 30px;" onclick="clear_msgs()">Clear Warnings</button>
 
     <h3 style="text-align: center; color: black"> Basic Driving Controls</h3>
     <div class="center" style="background-color: lightblue">

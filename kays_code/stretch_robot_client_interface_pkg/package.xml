@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>stretch_robot_client_interface</name>
+  <name>stretch_robot_client_interface_pkg</name>
   <version>0.0.0</version>
-  <description>The robot_gui_bridge package</description>
+  <description>The Stretch Robot Client Interface package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

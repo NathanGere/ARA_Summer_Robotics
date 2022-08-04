@@ -12,6 +12,12 @@
         align-items: center;
         height: 150px;
     }
+    .joystickcenter {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+    }
     /* Basic design for button */
     .buttondesign{
         border: 10px solid black;
@@ -39,11 +45,11 @@
     .changingpagebuttondesign{
         border: 5px solid black;
         background-color: hotpink;
-        padding: 20px 20px;
+        padding: 20px 50px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
-        font-size: 14px;
+        font-size: 20px;
         font-weight: bolder;
         margin: 10px 5px;
         cursor: pointer;
@@ -99,7 +105,7 @@
 
     /* Formating for split screen*/
     .middleofscreen {
-        margin-top: 0%;
+        margin-top: 2%;
         height: 90%;
         width: 100%;
     }
@@ -198,11 +204,11 @@
     //    name : "/stretch_gripper_controller/??",
     //    messageType : ''
     //  });//just the fingers
+    
+    // Subscribers
 
-    // subscribers
-
-    alexa_topic.subscribe(function(m) {
-    document.getElementById("txt_msg").innerHTML = m.data;
+    warning_topic.subscribe(function(m) {
+        document.getElementById("warning_msgs").innerHTML = m.data;
     });
 
     // Created functions
@@ -221,45 +227,6 @@
         }
     });
     cmd_vel_topic.publish(twist);
-    }
-
-    createJoystick = function () {
-    var options = {
-        zone: document.getElementById('zone_joystick'),
-        threshold: 0.1,
-        position: { left: 50 + '%' },
-        mode:'static',
-        size: 200,
-        color: '#000000'
-    };
-    manager = nipplejs.create(options);
-
-    linear_speed = 0;
-    angular_speed = 0;
-
-    manager.on('start', function (event, nipple) {
-        timer = setInterval(function () {
-        move(linear_speed, angular_speed);
-        }, 25);
-    });
-
-    manager.on('move', function (event, nipple) {
-        max_linear = 1.0; // m/s
-        max_angular = 1.0; // rad/s
-        max_distance = 75.0; // pixels;
-        linear_speed = Math.sin(nipple.angle.radian) * max_linear * nipple.distance/max_distance;
-            angular_speed = -Math.cos(nipple.angle.radian) * max_angular * nipple.distance/max_distance;
-    });
-
-    manager.on('end', function () {
-        if (timer) {
-        clearInterval(timer);
-        }
-        self.move(0, 0);
-    });
-    }
-    window.onload = function () {
-    createJoystick();
     }
 
 </script>
@@ -294,15 +261,20 @@
         </a>
 
     </div>
+
     <br>
     <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands!</p>
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch.</p>
     <h3>Connection Status: <span id="status"></span></h3>
     
+    <h2>Check Here For Warnings: <span id="warning_msgs" style="background-color: red;"></span></h2>
+    <p style="font-weight: bold">After forced stop, you may need to press a button repeatedly to move Stretch</p>
+    <button type="button" class="buttondesign" style="font-size: 14px; width: 175px; height: 30px; border: 5px solid black;" onclick="clear_msgs()">Clear Warnings</button>
+
     <div class="middleofscreen split left">
         <h2 style="text-align: center">Use This Joystick For Driving</h2>
         <br>
-        <div id="zone_joystick" class="center" style="position:relative"></div>
+        <div id="zone_joystick" class="joystickcenter" style="position:relative"></div>
     </div>
 
     <div class="middleofscreen split right">
@@ -333,5 +305,45 @@
         <p style="text-align: center">Author: Kay Wojtowicz &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Organization: UMass Lowell ARA Lab</p>
     </div>
 
+<script>
+        createJoystick = function () {
+    var options = {
+        zone: document.getElementById('zone_joystick'),
+        threshold: 0.1,
+        position: { left: 50 + '%' },
+        mode:'static',
+        size: 300,
+        color: '#000000'
+    };
+    manager = nipplejs.create(options);
+
+    linear_speed = 0;
+    angular_speed = 0;
+
+    manager.on('start', function (event, nipple) {
+        timer = setInterval(function () {
+        move(linear_speed, angular_speed);
+        }, 25);
+    });
+
+    manager.on('move', function (event, nipple) {
+        max_linear = 1.0; // m/s
+        max_angular = 1.0; // rad/s
+        max_distance = 75.0; // pixels;
+        linear_speed = Math.sin(nipple.angle.radian) * max_linear * nipple.distance/max_distance;
+            angular_speed = -Math.cos(nipple.angle.radian) * max_angular * nipple.distance/max_distance;
+    });
+
+    manager.on('end', function () {
+        if (timer) {
+        clearInterval(timer);
+        }
+        self.move(0, 0);
+    });
+    }
+    window.onload = function () {
+    createJoystick();
+    }
+</script>    
 </body>
 </html>

@@ -34,11 +34,11 @@
     .changingpagebuttondesign{
         border: 5px solid black;
         background-color: hotpink;
-        padding: 20px 20px;
+        padding: 20px 50px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
-        font-size: 14px;
+        font-size: 20px;
         font-weight: bolder;
         margin: 10px 5px;
         cursor: pointer;
@@ -118,26 +118,45 @@
     document.getElementById("status").innerHTML = "Closed";
     });
 
-        // Connect to Ros Topics
+    // Connect to Ros Topics
 
-        var alexa_topic = new ROSLIB.Topic({
-    ros : ros,
-    name : '/alexa_msgs',
-    messageType : 'std_msgs/String'
+    var alexa_topic = new ROSLIB.Topic({
+        ros : ros,
+        name : '/alexa_msgs',
+        messageType : 'std_msgs/String'
     });//to inform user alexa was used
 
     var cmd_vel_topic = new ROSLIB.Topic({
-    ros : ros,
-    name : "/stretch_diff_drive_controller/cmd_vel",
-    messageType : 'geometry_msgs/Twist'
+        ros : ros,
+        name : "/stretch_diff_drive_controller/cmd_vel",
+        messageType : 'geometry_msgs/Twist'
     });//moves base
 
-    // subscribers
+    var warning_topic = new ROSLIB.Topic({
+        ros : ros,
+        name : '/client_warning',
+        messageType : 'std_msgs/String'
+    });//to publish warnings while operating
+
+    // Subscribers
 
     alexa_topic.subscribe(function(m) {
-    document.getElementById("alexa_msgs").innerHTML = m.data;
+        document.getElementById("alexa_msgs").innerHTML = m.data;
     });
 
+    warning_topic.subscribe(function(m) {
+        document.getElementById("warning_msgs").innerHTML = m.data;
+    });
+
+    //created functions
+
+    clear_msgs = function(){
+        var str = new ROSLIB.Message({
+            data: ''
+    });
+        warning_topic.publish(str);
+    }
+    
 </script>
 </head>
 
