@@ -1,0 +1,4 @@
+forward_speed: 0.3
+max_turning_speed: -0.5
+min_turning_speed_right: -0.3
+min_turning_speed_left: 0.3

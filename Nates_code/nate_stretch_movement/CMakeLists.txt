@@ -298,6 +298,7 @@ catkin_install_python(PROGRAMS
   src/robust_wall_follower.py
   src/wf_var_setup.py
   src/smart_wall_follower.py
+  src/wall_follower.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -7,22 +7,6 @@ from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 
-#global variables
-oriented = False #is robot facing a wall?
-close_enough = False #is the robot hugging a wall?
-aligned = False #is the robot parallel to a wall?
-
-#variables to trigger new crash fixing attempts in certain scenarios
-case_5_tracker = 0
-case_7_tracker = 0
-case_10_tracker = 0
-case_13_tracker = 0
-case_14_tracker = 0
-case_15_tracker = 0
-#var to reset explorer method
-reset = 0
-#change mode
-mode = 0
 
 #params
 #std::string cmd_vel_output
@@ -30,7 +14,7 @@ mode = 0
 
 class SmartWallFollower:
 
-    def __init__(self, pub, scan, size, wall_on_left, wall_on_right, wall_on_front_right, wall_on_front_left, forward_cone, indices_of_collisions, index_mem, distance_mem):
+    def __init__(self, pub, scan, size, wall_on_left, wall_on_right, wall_on_front_right, wall_on_front_left, right_turn, forward_cone, indices_of_collisions, index_mem, distance_mem):
         self.wf_pub = pub
         self.wf_scan = scan
         self.motor_cmd = Twist()
@@ -39,6 +23,7 @@ class SmartWallFollower:
         self._wall_on_right = wall_on_right
         self._wall_on_front_right = wall_on_front_right
         self._wall_on_front_left = wall_on_front_left
+        self._right_turn = right_turn
         self._forward_cone = forward_cone
         self.wf_indices_of_collisions = indices_of_collisions
         self.wf_index_mem = index_mem
@@ -90,7 +75,7 @@ class SmartWallFollower:
         global crashed
 
         c = 0
-        while not rospy.is_shutdown and c < self.wf_size:
+        while not rospy.is_shutdown() and c < self.wf_size:
         
             if 1890 <= self.wf_indices_of_collisions[c] and self.wf_indices_of_collisions[c] <= 1999 or 0 <= self.wf_indices_of_collisions[c] and self.wf_indices_of_collisions[c] <= 300:
                 BL = 1
@@ -306,7 +291,7 @@ class SmartWallFollower:
         facing = False
 
         #if the front of the robot is aligned with the closest wall, the facing boolean will be set to true
-        if center > self.wf_distance_mem - 0.02 and center < self.wf_distance_mem + 0.02:
+        if center > self.wf_distance_mem - 0.01 and center < self.wf_distance_mem + 0.01:
         
             facing = True
         
@@ -339,14 +324,14 @@ class SmartWallFollower:
         front = self.wf_scan.ranges[1361]
 
         #once the robot is close enough, it will proceed
-        if front > 0.5 and front < 0.6:
+        if front > 0.4 and front < 0.5:
 
             global close_enough
             close_enough = True
             print("PREFERED INITIAL DISTANCE ACHIEVED.")
         
         #if there is space, the robot will get closer to the wall
-        elif front > 0.4:
+        elif front > 0.5:
         
             self.motor_cmd.linear.x = 0.5
             self.wf_pub.publish(self.motor_cmd)
@@ -354,10 +339,12 @@ class SmartWallFollower:
         
         #if the robot is too close, it will back up
         else:
-        
-            self.motor_cmd.linear.x = -0.5
-            self.wf_pub.publish(self.motor_cmd)
-            print("Establishing initial distance . . .")
+            if self.wf_scan.ranges[300] > 0.6:
+                self.motor_cmd.linear.x = -0.5
+                self.wf_pub.publish(self.motor_cmd)
+                print("Establishing initial distance . . .")
+            else:
+                print("Space is tight. This is as far as we can get")
         
     #METHOD TO GET ROBOTS RIGHT SIDE PARALLEL WITH A WALL
     def get_aligned(self):
@@ -392,71 +379,6 @@ class SmartWallFollower:
             print("Completing first alignment . . .")
         
 
-    #METHOD TO FOLLOW WALLS ON LEFT
-    def left_wall_follower(self):
-
-        #calculations for switch statement
-        l = 0
-        f = 0
-        r = 0
-        #setting up calculators
-        if self.wf_wall_on_left:
-            l = 1
-        if self.wf_wall_in_front: 
-            f = 2
-        if self.wf_wall_on_right: 
-            r = 4
-        #var for switch statment
-        wall_locations = l + f + r
-
-        if wall_locations == 0: #no walls
-            print("lwf: case 0")
-            self.motor_cmd.linear.x = 0.5
-            self.motor_cmd.angular.z = 1.0
-        
-        if wall_locations == 1: #wall on left
-            print("lwf: case 1")
-            self.motor_cmd.linear.x = 0.5
-
-        if wall_locations == 2: #wall in front
-            print("lwf: case 2")
-            self.motor_cmd.angular.z = -0.5
-        
-        if wall_locations == 3: #wall in front and on left
-            print("lwf: case 3")
-            self.motor_cmd.angular.z = -0.5
-        
-        if wall_locations == 4: #wall on right
-            print("lwf: case 4")
-            self.motor_cmd.linear.x = 0.5
-            self.motor_cmd.angular.z = -0.65
-        
-        if wall_locations == 5: #wall on left and right
-            print("lwf: case 5")
-            self.motor_cmd.linear.x = 0.5
-
-        if wall_locations == 6: #wall front and right
-            print("lwf: case 6")
-            self.motor_cmd.angular.z = -0.5
-        
-        if wall_locations == 7: #walls front, left, and right
-            print("lwf: case 7")
-            self.motor_cmd.angular.z = -0.5
-        
-        if self.wf_scan.ranges[820] < 0.25:
-        
-            print("lwf: close on right")
-            self.motor_cmd.linear.x = 0.3
-            self.motor_cmd.angular.z = 1.0
-        
-        if self.wf_scan.ranges[1890] < 0.25:
-        
-            print("lwf: close on left")
-            self.motor_cmd.angular.z = -1.0
-            self.motor_cmd.linear.x = 0.3
-        
-        self.wf_pub.publish(self.motor_cmd)
-
     #METHOD TO FOLLOW WALLS ON THE RIGHT
     def right_wall_follower(self):
 
@@ -478,92 +400,288 @@ class SmartWallFollower:
         wall_locations =  l + fl + fr + r
         
         if wall_locations == 0: #no walls
-            print("case 0")
+            print("\ncase 0")
             self.motor_cmd.linear.x = 0.5
-            self.motor_cmd.angular.z = -0.5
+            self.motor_cmd.angular.z = -0.8
+            print("\t_____________")
+            print("\t|\    |    /|")
+            print("\t| \   |   / |")
+            print("\t|  \  |  /  |")
+            print("\t|   \ | /   |")
+            print("\t----|^^^|----")
+            print("\t    |___|    ")
 
         elif wall_locations == 1: #wall on right
-            print("case 1")
+            print("\ncase 1")
             self.motor_cmd.linear.x = 0.5
+            print("\t_____________")
+            print("\t|\    |    /|")
+            print("\t| \   |   /#|")
+            print("\t|  \  |  /##|")
+            print("\t|   \ | /###|")
+            print("\t----|^^^|----")
+            print("\t    |___|    ")
 
         elif wall_locations == 2: #wall on front right
-            print("case 2")
-            self.motor_cmd.angular.z = -0.5
+            print("\ncase 2")
+            if self._right_turn:
+                self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\    |####/|")
+                print("\t| \   |###/ |")
+                print("\t|  \  |##/  |")
+                print("\t|   \ |#/   |")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
+
+            else:
+                self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\    |####/|")
+                print("\t| \   |###/ |")
+                print("\t|  \  |##/  |")
+                print("\t|   \ |#/RRR|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         elif wall_locations == 3: #wall on right and front right
-            print("case 3")
+            print("\ncase 3")
             self.motor_cmd.angular.z = 0.5
+            print("\t_____________")
+            print("\t|\    |####/|")
+            print("\t| \   |###/#|")
+            print("\t|  \  |##/##|")
+            print("\t|   \ |#/###|")
+            print("\t----|^^^|----")
+            print("\t    |___|    ")
 
         elif wall_locations == 4: #wall on front left
             print("case 4")
-            self.motor_cmd.angular.z = -0.5
-        
+            if self._right_turn:
+                self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\####|    /|")
+                print("\t| \###|   / |")
+                print("\t|  \##|  /  |")
+                print("\t|   \#| /RRR|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
+            else:
+                self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\####|    /|")
+                print("\t| \###|   / |")
+                print("\t|  \##|  /  |")
+                print("\t|   \#| /   |")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
+
         #CALCULATIONS REQ
         elif wall_locations == 5: #wall on front left and right
-            print("case 5")
+            print("\ncase 5")
             if self._forward_cone:
                 self.motor_cmd.linear.x = 0.5
+                print("\t_____________")
+                print("\t|\###|||   /|")
+                print("\t| \##|||  /#|")
+                print("\t|  \#||| /##|")
+                print("\t|   \|||/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
             else:
                 self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\####|    /|")
+                print("\t| \###|   /#|")
+                print("\t|  \##|  /##|")
+                print("\t|   \#| /###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         #CALCULATIONS REQ?
         elif wall_locations == 6: #wall on front left and front right
-            print("case 6")
-            self.motor_cmd.angular.z = -0.5
+            print("\ncase 6")
+            if self._right_turn:
+                self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\####|####/|")
+                print("\t| \###|###/ |")
+                print("\t|  \##|##/  |")
+                print("\t|   \#|#/RRR|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
+            else:
+                self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\####|####/|")
+                print("\t| \###|###/ |")
+                print("\t|  \##|##/  |")
+                print("\t|   \#|#/   |")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         elif wall_locations == 7: #wall on right, front right, and front left
             if self._forward_cone:
                 self.motor_cmd.linear.x = 0.5
+                print("\t_____________")
+                print("\t|\###|||###/|")
+                print("\t| \##|||##/#|")
+                print("\t|  \#|||#/##|")
+                print("\t|   \|||/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
             else:
                 self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\####|####/|")
+                print("\t| \###|###/#|")
+                print("\t|  \##|##/##|")
+                print("\t|   \#|#/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         elif wall_locations == 8: #wall on left
             print("case 8")
             self.motor_cmd.linear.x = 0.5
-            self.motor_cmd.angular.z = -0.5
+            self.motor_cmd.angular.z = -0.8
+            print("\t_____________")
+            print("\t|\    |    /|")
+            print("\t|#\   |   / |")
+            print("\t|##\  |  /  |")
+            print("\t|###\ | /   |")
+            print("\t----|^^^|----")
+            print("\t    |___|    ")
 
         elif wall_locations == 9: #wall on right and left
             print("case 9")
-            if self._forward_cone:
-                self.motor_cmd.linear.x = 0.5
-            else:
-                self.motor_cmd.angular.z = -0.5
+            self.motor_cmd.linear.x = 0.5
+            print("\t_____________")
+            print("\t|\    |    /|")
+            print("\t|#\   |   /#|")
+            print("\t|##\  |  /##|")
+            print("\t|###\ | /###|")
+            print("\t----|^^^|----")
+            print("\t    |___|    ")
+                
 
         elif wall_locations == 10: #wall on front right and left
             print("case 10")
             self.motor_cmd.angular.x = -0.5
+            print("\t_____________")
+            print("\t|\    |####/|")
+            print("\t|#\   |###/ |")
+            print("\t|##\  |##/  |")
+            print("\t|###\ |#/   |")
+            print("\t----|^^^|----")
+            print("\t    |___|    ")
 
         #CALCULATIONS REQ
         elif wall_locations == 11: #wall on right, front right, and left
             print("case 11")
             if self._forward_cone:
                 self.motor_cmd.linear.x = 0.5
+                print("\t_____________")
+                print("\t|\   |||###/|")
+                print("\t|#\  |||##/#|")
+                print("\t|##\ |||#/##|")
+                print("\t|###\|||/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
             else:
                 self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\    |####/|")
+                print("\t|#\   |###/#|")
+                print("\t|##\  |##/##|")
+                print("\t|###\ |#/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         elif wall_locations == 12: #wall on left and front left
             print("case 12")
-            self.motor_cmd.angular.z = -0.5
+            if self._right_turn:
+                self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\####|    /|")
+                print("\t|#\###|   / |")
+                print("\t|##\##|  /  |")
+                print("\t|###\#| /RRR|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
+            else:
+                self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\####|    /|")
+                print("\t|#\###|   / |")
+                print("\t|##\##|  /  |")
+                print("\t|###\#| /   |")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         #CALCULATIONS REQ
         elif wall_locations == 13: #wall on left, front left, and right
             print("case 13")
             if self._forward_cone:
-                self.motor_cmd = 0.5
+                self.motor_cmd.linear.x = 0.5
+                print("\t_____________")
+                print("\t|\###|||   /|")
+                print("\t|#\##|||  /#|")
+                print("\t|##\#||| /##|")
+                print("\t|###\|||/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
             else:
-                self.motor_cmd = -0.5
+                self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\####|    /|")
+                print("\t|#\###|   /#|")
+                print("\t|##\##|  /##|")
+                print("\t|###\#| /###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         elif wall_locations == 14: #wall on left, front left, and front right
             print("case 14")
-            self.motor_cmd.angular.z = -0.5
+            if self._right_turn:
+                self.motor_cmd.angular.z = -0.5
+                print("\t_____________")
+                print("\t|\####|####/|")
+                print("\t|#\###|###/ |")
+                print("\t|##\##|##/  |")
+                print("\t|###\#|#/RRR|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
+            else:
+                self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\####|####/|")
+                print("\t|#\###|###/ |")
+                print("\t|##\##|##/  |")
+                print("\t|###\#|#/   |")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
 
         #CALCULATIONS REQ
         elif wall_locations == 15: #wall on right, front right, front left, and left
             print("case 15")
             if self._forward_cone:
                 self.motor_cmd.linear.x = 0.5
+                print("\t_____________")
+                print("\t|\###|||###/|")
+                print("\t|#\##|||##/#|")
+                print("\t|##\#|||#/##|")
+                print("\t|###\|||/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
             else:
                 self.motor_cmd.angular.z = 0.5
+                print("\t_____________")
+                print("\t|\####|####/|")
+                print("\t|#\###|###/#|")
+                print("\t|##\##|##/##|")
+                print("\t|###\#|#/###|")
+                print("\t----|^^^|----")
+                print("\t    |___|    ")
         
         self.wf_pub.publish(self.motor_cmd)
 
@@ -643,7 +761,7 @@ def wall_identifier(scan):
     print("\nThe number of walls detected is: %d", num_of_walls)
 
     printer = num_of_walls
-    while printer > 0:
+    while not rospy.is_shutdown() and printer > 0:
     
         print("\nOne wall is located between scan.ranges[" + str(wall_starting_positions[printer]) +"] and scan.ranges[" + str(wall_ending_positions[printer]) +"]")
         printer = printer - 1
@@ -671,6 +789,7 @@ def thinker(scan):
     wall_on_right = False
     wall_on_front_right = False
     wall_on_front_left = False
+    right_turn = False
     forward_cone = True
     index_mem = 0
     distance_mem = 0.0
@@ -715,30 +834,37 @@ def thinker(scan):
     
         i+=1
     
+    #eliminates edge cases when needing to turn left or right in tight spaces
+    if scan.ranges[1361] >= 0.8 or scan.ranges[1200] >= 1.5:
+        right_turn = True
+
     #will calculate which sides of the robot there are walls on
-    
     i = 821
     while not rospy.is_shutdown() and i < 1900:
-        
+
+        #will determine wall locations
         if scan.ranges[i] < 0.4:
+
+            #if statements for walls
             if i <= 1021:
                 wall_on_right = True
-                if i >= 1161:
-                    forward_cone = False
-            if i <= 1361:
+            elif i <= 1361:
                 wall_on_front_right = True
-                if i <= 1561:
-                    forward_cone = False
-            if i <= 1700:
+            elif i <= 1600:
                 wall_on_front_left = True
-            if i <= 1900:
+            elif i <= 1800:
                 wall_on_left = True
+
+            #if statement for forward space
+            if i >= 1161 and i <= 1561:
+                forward_cone = False
+        
 
         i+=1
             
     
     #setting up instance of wall follower class
-    swf = SmartWallFollower(pub, scan, size, wall_on_left, wall_on_right, wall_on_front_right, wall_on_front_left, forward_cone, indices_of_collisions, index_mem, distance_mem)
+    swf = SmartWallFollower(pub, scan, size, wall_on_left, wall_on_right, wall_on_front_right, wall_on_front_left, right_turn, forward_cone, indices_of_collisions, index_mem, distance_mem)
 
     #will activate explorer method in next loop of ros::spinOnce()
     if not walls_nearby:
@@ -800,4 +926,20 @@ def launchpoint():
 
 #MAIN
 if __name__ == '__main__':
+    #global variables
+    oriented = False #is robot facing a wall?
+    close_enough = False #is the robot hugging a wall?
+    aligned = False #is the robot parallel to a wall?
+
+    #variables to trigger new crash fixing attempts in certain scenarios
+    case_5_tracker = 0
+    case_7_tracker = 0
+    case_10_tracker = 0
+    case_13_tracker = 0
+    case_14_tracker = 0
+    case_15_tracker = 0
+    #var to reset explorer method
+    reset = 0
+    #change mode
+    mode = 0
     launchpoint()
