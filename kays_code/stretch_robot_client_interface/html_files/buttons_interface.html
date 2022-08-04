@@ -10,14 +10,14 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 150px;
+        height: 100px;
     }
     /* Basic design for button */
     .buttondesign{
-        border: 10px solid black;
+        border: 5px solid black;
         background-color: white;
-        width: 300px;
-        height: 100px;
+        width: 200px;
+        height: 75px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
@@ -34,11 +34,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100px;
+        height: 50px;
     }
     .changingpagebuttondesign{
         border: 5px solid black;
-        background-color:  #eee;
+        background-color:  hotpink;
         padding: 20px 20px;
         text-align: center;
         text-decoration: none ;
@@ -117,7 +117,7 @@
 
     var cmd_vel_topic = new ROSLIB.Topic({
     ros : ros,
-    name : "/stretch_diff_drive_controller/cmd_vel",
+    name : '/stretch_diff_drive_controller/cmd_vel',
     messageType : 'geometry_msgs/Twist'
     });//moves base
 
@@ -157,59 +157,67 @@
 
 <body>
     <h1 style="text-align: center; color: blue">Welcome to the Buttons Interface</h1>
+    <hr>
+
+    <p style="text-align: center"><strong>Click one of the buttons below to move to a different page</strong></p>
+    <div class="changingpagecenter">
+        <a href="joystick_interface.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons_interface.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa_interface.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="variety_interface.html">
+            <button class="changingpagebuttondesign">Variety Interface</button>
+        </a>
+
+        <a href="home_page.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
+
+    <br>
     <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
     <h3>Connection Status: <span id="status"></span></h3>
 
-    <br>
-
-    <h2 style="text-align: center">Basic Driving Controls</h2>
+    <h3 style="text-align: center; color: black"> Basic Driving Controls</h3>
     <div class="center" style="background-color: lightblue">
         <button type="button" class="buttondesign" onclick="move(1,0)">Forward</button>
         <button type="button" class="buttondesign" onclick="move(-1,0)">Backwards</button>
         <button type="button" class="buttondesign" onclick="move(0,1)">Turn Left</button>
         <button type="button" class="buttondesign" onclick="move(0,-1)">Turn Right</button>
-        <button type="button" class="buttondesign" onclick="move(0,0)">Stop Movement</button>
     </div>
 
-    <br>
-
-    <h2 style="text-align: center">Basic Arm Controls</h2>
-    <div class="center" style="background-color: lightgreen">
-        <button type="button" class="buttondesign" onclick="movearm()">Move lift Up</button>
+    <h3 style="text-align: center; color: black">Basic Arm Controls</h3>
+    <div class="center" style="background-color: lavender">
+        <button type="button" class="buttondesign" onclick="movearm()">Move Lift Up</button>
         <button type="button" class="buttondesign" onclick="movearm()">Move Lift Down</button>
         <button type="button" class="buttondesign" onclick="movearm()">Extend Arm</button>
         <button type="button" class="buttondesign" onclick="movearm()">Collapse Arm</button>
-        <button type="button" class="buttondesign" onclick="movearm()">Stop Movement</button>
+        </div>
+
+    <h3 style="text-align: center; color: black">Wrist Controls</h3>
+    <div class="center" style="background-color: lightgreen">
+        <button type="button" class="buttondesign" onclick="movearm()">Rotate Left</button>
+        <button type="button" class="buttondesign" onclick="movearm()">Rotate Right</button>
     </div>
 
-    <p>Choose which page you would like to travel to.</p>
-    <p><strong>Remeber</strong> you are already on the <mark>Buttons Interface</mark></p>
-
-    <div class="changingpagecenter">
-        <a href="joystick.html">
-            <button class="changingpagebuttondesign">Joystick Interface</button>
-        </a>
-
-        <a href="buttons.html">
-            <button class="changingpagebuttondesign">Button Interface</button>
-        </a>
-
-        <a href="alexa.html">
-            <button class="changingpagebuttondesign">Alexa Interface</button>
-        </a>
-
-        <a href="combination.html">
-            <button class="changingpagebuttondesign">Full Interface</button>
-        </a>
-
-        <a href="home.html">
-            <button class="changingpagebuttondesign">Home Page</button>
-        </a>
-
+    <h3 style="text-align: center; color: black">Gripper Controls</h3>
+    <div class="center" style="background-color: lightpink">
+        <button type="button" class="buttondesign" onclick="movearm()">Open Fingers</button>
+        <button type="button" class="buttondesign" onclick="movearm()">Close Fingers</button>
     </div>
+
     <hr>
-    <p style="text-align: center; bottom: 0.5in ;">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+    <p style="text-align: center">Author: Kay Wojtowicz &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Organization: UMass Lowell ARA Lab</p>
 </body>
 
 </html>

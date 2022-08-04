@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Combination Interface</title>
+    <title>Varity Interface</title>
 
 <!-- Styles -->
 <style>
@@ -16,14 +16,14 @@
     .buttondesign{
         border: 10px solid black;
         background-color: white;
-        width: 300px;
+        width: 150px;
         height: 100px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: bolder;
-        margin: 0px 20px;
+        margin: 0px 5px;
         cursor: pointer;
     }
     .active, .buttondesign:hover {
@@ -34,11 +34,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100px;
+        height: 50px;
     }
     .changingpagebuttondesign{
         border: 5px solid black;
-        background-color: #eee;
+        background-color: hotpink;
         padding: 20px 20px;
         text-align: center;
         text-decoration: none ;
@@ -99,13 +99,13 @@
 
     /* Formating for split screen*/
     .middleofscreen {
-        margin-top: 5%;
-        height: 30%;
+        margin-top: 0%;
+        height: 90%;
         width: 100%;
     }
     .bottomofscreen {
-        margin-top: 35%;
-        height: 40%;
+        margin-top: 80%;
+        height: 8%;
         width: 100%;
         background-color: none;
     }
@@ -117,13 +117,23 @@
 
     .left {
         left: 0;
-        width: 50%;
+        width: 30%;
         background-color: none;
     }
 
     .right {
         right: 0;
-        width: 50%;
+        width: 70%;
+        background-color: none;
+    }
+    .rightright{
+        right: 0;
+        width: 35%;
+        background-color: none;
+    }
+    .leftright{
+        right: 35%;
+        width: 35%;
         background-color: none;
     }
 
@@ -258,140 +268,70 @@
 <!-- What the client sees -->
 
 <body>
-    <h1 style="text-align: center; color: blue">Welcome to the Full Interface</h1>
+    <h1 style="text-align: center; color: blue">Welcome to the Variety Interface</h1>
     <hr>
+
+    <p style="text-align: center"><strong>Click one of the buttons below to move to a different page</strong></p>
+    <div class="changingpagecenter">
+        <a href="joystick_interface.html">
+            <button class="changingpagebuttondesign">Joystick Interface</button>
+        </a>
+
+        <a href="buttons_interface.html">
+            <button class="changingpagebuttondesign">Button Interface</button>
+        </a>
+
+        <a href="alexa_interface.html">
+            <button class="changingpagebuttondesign">Alexa Interface</button>
+        </a>
+
+        <a href="variety_interface.html">
+            <button class="changingpagebuttondesign">Variety Interface</button>
+        </a>
+
+        <a href="home_page.html">
+            <button class="changingpagebuttondesign">Home Page</button>
+        </a>
+
+    </div>
+    <br>
     <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands!</p>
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch.</p>
     <h3>Connection Status: <span id="status"></span></h3>
-
+    
     <div class="middleofscreen split left">
-        <h2 style="text-align: center">Basic Joystick For Moving Stretch Robot Base</h2>
+        <h2 style="text-align: center">Use This Joystick For Driving</h2>
         <br>
         <div id="zone_joystick" class="center" style="position:relative"></div>
     </div>
 
     <div class="middleofscreen split right">
-        <h2 style="text-align: center">Basic Driving Controls</h2>
-        <div class="center" style="background-color: lightblue">
-            <button class="buttondesign" onclick="move(1,0)">Forward</button>
-            <button class="buttondesign" onclick="move(-1,0)">Backwards</button>
-            <button class="buttondesign" onclick="move(0,1)">Turn Left</button>
-            <button class="buttondesign" onclick="move(0,-1)">Turn Right</button>
-            <button class="buttondesign" onclick="move(0,0)">Stop Movement</button>
-        </div>
-
-        <h2 style="text-align: center">Basic Arm Controls</h2>
+        <h2 style="text-align: center">Use These Buttons To Control The Arm</h2>
+        <h3 style="text-align: center; color: black">Basic Arm Controls</h3>
+        <div class="center" style="background-color: lavender">
+            <button type="button" class="buttondesign" onclick="movearm()">Move Lift Up</button>
+            <button type="button" class="buttondesign" onclick="movearm()">Move Lift Down</button>
+            <button type="button" class="buttondesign" onclick="movearm()">Extend Arm</button>
+            <button type="button" class="buttondesign" onclick="movearm()">Collapse Arm</button>
+            </div>
+    
+        <h3 style="text-align: center; color: black">Wrist Controls</h3>
         <div class="center" style="background-color: lightgreen">
-            <button class="buttondesign" onclick="">Move lift Up</button>
-            <button class="buttondesign" onclick="">Move Lift Down</button>
-            <button class="buttondesign" onclick="">Extend Arm</button>
-            <button class="buttondesign" onclick="">Collapse Arm</button>
-            <button class="buttondesign" onclick="">Stop Movement</button>
+            <button type="button" class="buttondesign" onclick="movearm()">Rotate Left</button>
+            <button type="button" class="buttondesign" onclick="movearm()">Rotate Right</button>
+        </div>
+    
+        <h3 style="text-align: center; color: black">Gripper Controls</h3>
+        <div class="center" style="background-color: lightpink">
+            <button type="button" class="buttondesign" onclick="movearm()">Open Fingers</button>
+            <button type="button" class="buttondesign" onclick="movearm()">Close Fingers</button>
         </div>
     </div>
 
     <div class="bottomofscreen"></div>
-        <button type="button" class="collapsible">Alexa Interface</button>
-        <div class="collapsibletext">
-            <h2 style="text-align: center">How do communicate with your Stretch Robot with Alexa?</h2>
-            <h4>Below, there are a instructions on what commands to use with Alexa</h4>
-            
-            <br>
-
-            <h2>Always make sure you say <strong>Alexa</strong></h2>
-            <p style="font-size: 20px">Then say either...</p>
-            <ul style="font-size: 20px">
-                <li>have Stretch Robot ...</li>
-                <li>tell Stretch Robot to ...</li>
-                <li>ask Stretch Robot to ...</li>
-                <li>make Stretch Robot ...</li>
-            </ul>
-            <p style="font-size: 20px">Then use one of the commands shown below to begin commanding your Stretch Robot!</p>
-
-            <h2 style="text-align: center">Working Commands</h2>
-            <table style="width: 100%">
-                <tr>
-                    <th style="background-color: yellow; width:30%">Command</th>
-                    <th>Function</th>
-                </tr>
-                <tr>
-                    <td style="background-color: yellow">Drive Forward</td>
-                    <td>This will have Stretch Robot drive forward a little</td>
-                </tr>
-                <tr>
-                    <td style="background-color: yellow">Drive Backwards</td>
-                    <td>This will have Stretch Robot drive backwards a little</td>
-                </tr>
-            </table>
-            
-            <br>
-            <br>
-            <br>
-
-            <h2 style="text-align: center">Commands in Development</h2>
-            <table style="width: 100%">
-                <tr>
-                    <th style="background-color: yellow; width:30%">Command</th>
-                    <th>Function</th>
-                </tr>
-                <tr>
-                    <td style="background-color: yellow">Stow Arm</td>
-                    <td>Will move the arm from its current position into the stow position for easier storage and mobility</td>
-                </tr>
-                <tr>
-                    <td style="background-color: yellow">Come Find Me</td>
-                    <td>Will activate an action of the Robot to search the area and locate a person</td>
-                </tr>
-            </table>    
-        </div>
-    
-    
-        <p>Choose which page you would like to travel to.</p>
-        <p><strong>Remeber</strong> you are already on the <mark>Full Interface</mark></p>
-        <div class="changingpagecenter">
-            <a href="joystick.html">
-                <button class="changingpagebuttondesign">Joystick Interface</button>
-            </a>
-
-            <a href="buttons.html">
-                <button class="changingpagebuttondesign">Button Interface</button>
-            </a>
-
-            <a href="alexa.html">
-                <button class="changingpagebuttondesign">Alexa Interface</button>
-            </a>
-
-            <a href="combination.html">
-                <button class="changingpagebuttondesign">Full Interface</button>
-            </a>
-
-            <a href="home.html">
-                <button class="changingpagebuttondesign">Home Page</button>
-            </a>
-
-        </div>
-
         <hr>
-        <p style="text-align: center">Author: Kay Wojtowicz Organization: UMass Lowell ARA Lab</p>
+        <p style="text-align: center">Author: Kay Wojtowicz &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Organization: UMass Lowell ARA Lab</p>
     </div>
-<script>
-    //used for collapsible buttons
-    var coll = document.getElementsByClassName("collapsible");
-    var i;
-
-    for (i = 0; i < coll.length; i++) {
-        coll[i].addEventListener("click", function() {
-            this.classList.toggle("active");
-            var content = this.nextElementSibling;
-            if (content.style.display === "block") {
-                content.style.display = "none";
-            } else {
-                content.style.display = "block";
-                content.style.maxHeight = content.scrollHeight + "px";
-            }
-        });
-    }
-</script>
 
 </body>
 </html>
