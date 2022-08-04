@@ -56,8 +56,8 @@ class object_receiver:
         
         print("------------------------------------------------------------------------------------")
 
-        return human_bool
-        # sys.exit(1)
+        # return human_bool
+        sys.exit(1)
 ################################################################
     def person_return(self):
 

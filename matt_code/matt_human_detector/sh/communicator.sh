@@ -1,6 +1,10 @@
 #!/bin/bash
 
+# Move to this directory
 cd src/ARA_Summer_Robotics/matt_code/depthai-python/examples/ObjectTracker/
+
+# start the camera to look for human
+python3 object_tracker.py
 
 filename='bool.txt'
 n=1
@@ -27,8 +31,9 @@ if grep -q person "$filename"; then
     
     # bash /file/path/to/file.sh file.txt
 
-    echo "person">> read.txt
-    cat p_saver.txt
+    # echo "person">> read.txt
+    # cat read.txt
+    roslaunch matt_human_detector human_detector.launch
 
     # STR="person"
     # python seeker_client.py

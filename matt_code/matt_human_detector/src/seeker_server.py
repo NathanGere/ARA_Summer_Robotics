@@ -11,10 +11,10 @@ def seek_response(req):
 
     label = "cat"
 
-    # ffiillee = os.path.exists('/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/src/read.txt')
+    # ffiillee = os.path.exists('/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/txt/read.txt')
     # print(ffiillee)
 
-    with open("/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/src/read.txt", "r") as fp:
+    with open("/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/txt/read.txt", "r") as fp:
         label = fp.read()
     
     # if llabel == "person":
