@@ -7,4 +7,6 @@
 
 <node pkg="matt_human_detector" type="seeker_server.py" name="Server_Node" output="screen" />
 
+<!-- <include file="$(find nate_stretch_movement)/launch/right_wall_follower.launch" /> -->
+
 </launch>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<title>Summer Summary</title>
+
+<h1 style="text-align: center;">Welcome to my webpage!</h1>
+<h2 style="text-align: center;">This is an info-matic of my summer job</h2>
+<h3 style="text-align: center;">By: Matthew Flores</h3>
+
+<hr>
+
+<p>We will be starting off with what I researched and my final product.</p>
+<p>The summer project I focused on was being able to detect a human and tell the stretch hello robot to stop moving and give the user what was being delivered</p>
+<p>I was somewhat able to complete this code but not to its full potential. I can have the user control the robot and have it still detect a person</p>
+
+<p>I used the following websites to help with my research!</p>
+<p>Robot Github:<a href="https://docs.luxonis.com/en/latest/pages/troubleshooting/">Robot github</a></p>
+<p>Camera Github:<a href="https://github.com/luxonis">Camera github</a></p>
+
+<img src="images/camera.jpg" alt="This is the camera we used!">
+</body>
+</html> 
+
+cd src/ARA_Summer_Robotics/matt_code/depthai-python/examples/ObjectTracker/
+pwd
+ls
+
+filename='latest_saver.txt'
+n=1
+while read line; do
+# reading each line
+echo "Line No. $n : $line"
+n=$((n+1))
+done < $filename
+
+cat latest_saver.txt
