@@ -1,8 +1,11 @@
 # Kay's Code
 ## Overview
-The objective Kay was trying to reach was to create code that would cause the robot to not collide into obstacles using the lidar on the stretch robot.
+The objective of these codes is to be used as a client interface to allow for easier communication with Stretch Robot. Additionally there is a collision prevention package which is compatable with the Stretch Robot.
 
-There will also be a text file including all work done with the echo dot.
+## stretch_robot_client_interface_pkg
+The purpose of this package is to contain all the needed files for the client interface.
+
+This package also includes a launch file which launches a client interface application of the created collision prevention package as well as a server on a rosbridge on port 2022.
 
 ## collision_prevention_pkg
 This package is currently able avoid obsticals using the lidar of the stretch robot. 
