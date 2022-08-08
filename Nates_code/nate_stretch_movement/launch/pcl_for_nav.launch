@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="nate_stretch_movement" type="pcl_for_nav_node" name="PCLforNavNode" output="screen">
+        <rosparam file="$(find nate_stretch_movement)/params/pcl_for_nav_params.yaml" command = "load"/>
+    </node>
+</launch>

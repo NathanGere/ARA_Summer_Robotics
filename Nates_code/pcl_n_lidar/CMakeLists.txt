@@ -143,6 +143,7 @@ add_executable(camera_passthrough_node src/camera_passthrough.cpp)
 add_executable(cam_downsample_n_passthrough_node src/cam_downsample_n_passthrough.cpp)
 add_executable(lidar_server_node src/lidar_server.cpp)
 add_executable(lidar_client_node src/lidar_client.cpp)
+add_executable(point_cloud_test_node src/point_cloud_tests.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -158,6 +159,7 @@ add_dependencies(camera_passthrough_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${c
 add_dependencies(cam_downsample_n_passthrough_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(lidar_server_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(lidar_client_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(point_cloud_test_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(camera_pcl_downsampler_node
@@ -176,6 +178,9 @@ target_link_libraries(lidar_server_node
    ${catkin_LIBRARIES}
 )
 target_link_libraries(lidar_client_node
+   ${catkin_LIBRARIES}
+)
+target_link_libraries(point_cloud_test_node
    ${catkin_LIBRARIES}
 )
 

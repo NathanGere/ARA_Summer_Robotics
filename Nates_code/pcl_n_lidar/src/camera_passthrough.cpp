@@ -77,9 +77,9 @@ int main(int argc, char **argv)
     while(ros::ok())
     {   
         //params can be altered while running
-        n.param<std::string>("filter_field_name", filter_field_name, "y");
-        n.param<float>("filter_limit_min", filter_limit_min, -1.0);
-        n.param<float>("filter_limit_max", filter_limit_max, 1.0);
+        n.param<std::string>("filter_field_name", filter_field_name, "x");
+        n.param<float>("filter_limit_min", filter_limit_min, -0.4);
+        n.param<float>("filter_limit_max", filter_limit_max, 0.0);
 
         ros::spinOnce();
         loop_rate.sleep();

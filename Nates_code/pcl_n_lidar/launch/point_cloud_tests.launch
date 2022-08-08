@@ -1,0 +1,6 @@
+<launch>
+    <!-- Launches downsampler-->
+    <node pkg="pcl_n_lidar" type="point_cloud_test_node" name="Testerino" output="screen">
+        <rosparam file="$(find pcl_n_lidar)/params/camera_downsample_params.yaml" command="load" />
+    </node>
+</launch>
