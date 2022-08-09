@@ -21,11 +21,11 @@ if [ "$var1" != "$var2" ]; then
         n=$((n+1))
         done < $filename
 
-    echo "">| bool.txt
-
     # If person is returned from bool.txt
     if grep -q person "$filename";
     then
+    
+        echo "">| bool.txt
         # Move to this directory
         cd ../../../
         cd matt_human_detector/txt/
