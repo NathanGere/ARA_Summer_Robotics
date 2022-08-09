@@ -11,17 +11,25 @@ import numpy as np
    
 def callback(cloud_msg):
 
-        pointCloud = cloud_msg
-        print("\n\n\n\n\n\tXYZ POINTS")
-        for point in pc2.read_points(pointCloud, field_names=pointCloud.data, skip_nans=True):
-            pt_x = point[0]
-            pt_y = point[1]
-            pt_z = point[2]
-            print("x: " + str(pt_x) + " y: " + str(pt_y) + " z: " + str(pt_z))
+    '''
+    if cloud_msg.is_dense:
+        print("It is dense")
+    else:
+        print("It is not dense")
+    '''
+
+    pointCloud = cloud_msg
+    print("\n\n\n\n\n\tXYZ POINTS")
+    for point in pc2.read_points(pointCloud, field_names=pointCloud.data, skip_nans=True):
+        pt_x = point[0]
+        pt_y = point[1]
+        pt_z = point[2]
+        print("x: " + str(pt_x) + " y: " + str(pt_y) + " z: " + str(pt_z))
+    
 
 def main():
     rospy.init_node("pcl_xyz_node")
-    cloud_sub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, callback, queue_size=1, buff_size=52428800)
+    cloud_sub = rospy.Subscriber("/pcl_for_nav/points", PointCloud2, callback, queue_size=1, buff_size=52428800)
     rospy.spin()
 
 if __name__ == '__main__':

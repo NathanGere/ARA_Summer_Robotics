@@ -309,6 +309,9 @@ catkin_install_python(PROGRAMS
   src/simulated_teleop.py
   src/altered_sim_teleop.py
   src/n_keyboard.py
+  src/pcl_wall_detector.py
+  src/sub_wall_detector.py
+  src/pcl_wall_follower.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
