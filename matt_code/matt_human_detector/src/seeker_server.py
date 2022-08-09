@@ -2,29 +2,33 @@
 
 import rospy
 import sys
-from std_msgs.msg import Bool
+from std_msgs.msg import *
 from matt_human_detector.srv import *
-import os
-import os.path
+
+def checker(label):
+    while not rospy.is_shutdown():
+        if label == "":
+            with open("/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/txt/read.txt", "r") as fp:
+                label=""
+                for line in fp: 
+                    stripped_line = line.strip()
+                    label += stripped_line
+        else:
+            return label
 
 def seek_response(req):
 
-    label = "cat"
+    print("Now calling checker function\n")
 
-    # ffiillee = os.path.exists('/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/txt/read.txt')
-    # print(ffiillee)
+    label = ""
 
-    with open("/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/txt/read.txt", "r") as fp:
-        label = fp.read()
-    
-    # if llabel == "person":
-        # label = llabel
+    label = checker(label)
 
-    # print("According to object_tracker file... llabel is: " + str(llabel))
+    with open("/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/txt/read.txt", "w+") as fp:
+        pass
+
     print("According to object_tracker file... label is: " + str(label))
     print("")
-    # checking if label returned human, if so retuen true otherwise return false
-    # print(str(label))
 
     if str(label) == "person":
         print("Label is person!\n")
@@ -35,8 +39,6 @@ def seek_response(req):
 
     print("Bool value is: {}" .format(req))
     print("")
-    # check if the correct boolean value is going to be retuerned the client
-    # print(bool(req))
 
     print("Now returning response\n")
 

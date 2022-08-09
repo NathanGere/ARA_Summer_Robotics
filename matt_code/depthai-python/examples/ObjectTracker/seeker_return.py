@@ -13,8 +13,7 @@ class object_receiver:
         empty = "empty"
         checker = "Checkmate"
 
-        print("------------------------------------------------------------------------------------")
-        print("Starting search for person!\n")
+        print("------------------------------------------------------------------------------------\n")
         print("Searching label.txt to find what object_tracker has given!\n")
 
         # Gets value from label.txt, and gives it to human_detector

@@ -156,7 +156,6 @@ with dai.Device(pipeline, usb2Mode=True) as device:
                                                 var = object_receiver()
                                                 var.main_object()
 
-
         cv2.putText(frame, "NN fps: {:.2f}".format(fps), (2, frame.shape[0] - 4), cv2.FONT_HERSHEY_TRIPLEX, 0.4, color)
 
         cv2.imshow("tracker", frame)

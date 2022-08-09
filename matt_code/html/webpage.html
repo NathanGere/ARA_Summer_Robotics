@@ -10,28 +10,59 @@
 
 <hr>
 
-<p>We will be starting off with what I researched and my final product.</p>
-<p>The summer project I focused on was being able to detect a human and tell the stretch hello robot to stop moving and give the user what was being delivered</p>
-<p>I was somewhat able to complete this code but not to its full potential. I can have the user control the robot and have it still detect a person</p>
+<p style="font-size: 25px; text-indent: 25px;">We will be starting off with what I researched and my final product. The summer project I focused on was being able to detect a human and tell the stretch hello robot to stop moving and give the user what was being delivered. I was somewhat able to complete this code but not to its full potential. I can have the user control the robot and have it still detect a person</p>
 
-<p>I used the following websites to help with my research!</p>
-<p>Robot Github:<a href="https://docs.luxonis.com/en/latest/pages/troubleshooting/">Robot github</a></p>
-<p>Camera Github:<a href="https://github.com/luxonis">Camera github</a></p>
+<p style="font-size: 25px; text-align: center;">I used the following websites to help with my research!</p>
+<p style="font-size: 25px; text-indent: 1000px;">Robot Github:<a href="https://github.com/hello-robot">Robot github</a></p>
+<p style="font-size: 25px; text-indent: 2500px;">Camera Github:<a href="https://github.com/luxonis">Camera github</a></p>
 
-<img src="images/camera.jpg" alt="This is the camera we used!">
+<img src="/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detector/images/camera.jpeg">
+<p style="font-size: 25px;">This is the camera we used!</p>
 </body>
 </html> 
 
-cd src/ARA_Summer_Robotics/matt_code/depthai-python/examples/ObjectTracker/
-pwd
-ls
+<!-- Get links on the same line and also get image amd text centered-->
 
-filename='latest_saver.txt'
+#!/bin/bash
+
+# echo Restarting will take 5 seconds
+# sleep 5s
+# echo Hello and welcome back
+
+# Move to this directory
+cd src/ARA_Summer_Robotics/matt_code/depthai-python/examples/ObjectTracker/
+
+# start the camera to look for human
+python3 object_tracker.py
+
+# Check bool.txt
+filename='bool.txt'
 n=1
 while read line; do
-# reading each line
-echo "Line No. $n : $line"
-n=$((n+1))
-done < $filename
+    # reading each line
+    echo "Line No. $n : $line"
+    n=$((n+1))
+    done < $filename
 
-cat latest_saver.txt
+# If person is returned from bool.txt
+if grep -q person "$filename"; then
+
+    # Move to this directory
+    cd ../../../
+    cd matt_human_detector/txt/
+
+    echo ------------------------------------------------------------------------------------
+    echo In bash, passing argument... person ...to read.txt
+ 
+    # Write to read.txt that person was found
+    echo "person">| read.txt
+    echo Passing person is sucessful!
+
+    # print content of read.txt
+    # cat read.txt
+    echo ------------------------------------------------------------------------------------
+    
+    # Launch server and client to start program
+    roslaunch matt_human_detector human_detector.launch
+
+fi
