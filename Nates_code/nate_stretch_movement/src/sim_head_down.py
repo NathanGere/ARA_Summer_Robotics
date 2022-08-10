@@ -179,7 +179,7 @@ def middle_man():
 if __name__ == '__main__':
     try:
         #setting up node
-        rospy.init_node("wall_follower_python_node", anonymous =True)
+        rospy.init_node("sim_head_down_node", anonymous =True)
 
         middle_man()
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from numpy import indices
 import rospy
 from std_msgs.msg import String
 from sensor_msgs.msg import LaserScan

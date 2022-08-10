@@ -12,10 +12,10 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 
 #############################################################################################################################################################
-class PCLWallFollower:
+class StretchWallFollower:
     
     #########################################################################################################################################################
-    def __init__(self, twist_pub = rospy.Publisher("/stretch_diff_drive_controller/cmd_vel", Twist, queue_size=10), displays = True, forward_speed = 0.3, 
+    def __init__(self, twist_pub = rospy.Publisher("/stretch/cmd_vel", Twist, queue_size=10), displays = True, forward_speed = 0.3, 
                     max_turning_speed = -0.6, min_turning_speed_right = -0.3, min_turning_speed_left = 0.3):
         self._pub = twist_pub #wall follower publisher
         self._displays = displays
@@ -44,7 +44,7 @@ class PCLWallFollower:
         self._min_turning_speed_left = min_turning_speed_left
 
         #retrieving values for wall follower calculations
-        self.cloud_sub = rospy.Subscriber("/pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
+        self.cloud_sub = rospy.Subscriber("/stretch_pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
         self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.scan_cb)
         self._scan = LaserScan()
         self._cloud = PointCloud2()
@@ -1352,10 +1352,10 @@ class PCLWallFollower:
 if __name__ == '__main__':
 
     #initializing node
-    rospy.init_node("pcl_wf_node", anonymous = True)
+    rospy.init_node("stretch_wall_follower_node", anonymous = True)
 
     try:
-        pcl_wall_follower = PCLWallFollower(displays=False)
+        stretch_wall_follower = StretchWallFollower(displays=False)
 
     except rospy.ROSInterruptException:
         pass

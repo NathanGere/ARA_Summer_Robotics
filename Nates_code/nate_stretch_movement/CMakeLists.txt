@@ -313,6 +313,7 @@ catkin_install_python(PROGRAMS
   src/sub_wall_detector.py
   src/pcl_wall_follower.py
   src/sim_head_down.py
+  src/pcl_wf.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
