@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from logging import shutdown
 import rospy
 import sys
 from std_msgs.msg import Bool
@@ -18,14 +19,15 @@ def client_response():
 
         print("Response/{} " .format(response))
 
+        return response
+
     except rospy.ServiceException as e:
         print("Service call failed: %s"%e)
         sys.exit(1)
 
-    print("")
-    print("------------------------------------------------------------------------------------")
-
 if __name__ == '__main__':
+    m_bool = False
+
     print("------------------------------------------------------------------------------------\n")
 
     print("----------------------------")
@@ -40,6 +42,16 @@ if __name__ == '__main__':
     print("----------------------------\n")
 
     print("Calling client_response function\n")
-    client_response()
+    
 
-    rospy.spin()
+    pub = rospy.Publisher('talker', Bool, queue_size = 10)
+    rate = rospy.Rate(10)
+    while m_bool == False and not rospy.is_shutdown():
+        pub.publish(m_bool)
+        m_bool = client_response()
+        rate.sleep()
+
+    pub.publish(True)
+
+    print("")
+    print("------------------------------------------------------------------------------------")

@@ -1,4 +1,0 @@
-<launch>
-    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
-	<param name="/rosbridge_websocket/port" value="2021" />
-</launch>

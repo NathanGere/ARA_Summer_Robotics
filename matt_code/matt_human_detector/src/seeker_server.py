@@ -4,6 +4,7 @@ import rospy
 import sys
 from std_msgs.msg import *
 from matt_human_detector.srv import *
+import time
 
 def checker(label):
     while not rospy.is_shutdown():
@@ -13,6 +14,8 @@ def checker(label):
                 for line in fp: 
                     stripped_line = line.strip()
                     label += stripped_line
+            print("Awaiting Response...")
+            time.sleep(5)
         else:
             return label
 

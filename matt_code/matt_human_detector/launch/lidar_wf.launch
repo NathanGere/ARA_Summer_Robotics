@@ -1,0 +1,5 @@
+<launch>
+
+    <node pkg="matt_human_detector" type="lidar_wf.py" name="Nate_Node" output="screen" />
+
+</launch>

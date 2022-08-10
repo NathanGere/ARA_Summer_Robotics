@@ -1,12 +1,7 @@
 <launch>
 
-<!-- Launch human model detector -->
-<!-- <include file="$(find depthai-python)/examples/ObjectTracker/object_tracker.py"> -->
-
 <node pkg="matt_human_detector" type="seeker_client.py" name="Client_Node" output="screen" />
 
 <node pkg="matt_human_detector" type="seeker_server.py" name="Server_Node" output="screen" />
-
-<!-- <include file="$(find nate_stretch_movement)/launch/right_wall_follower.launch" /> -->
 
 </launch>
