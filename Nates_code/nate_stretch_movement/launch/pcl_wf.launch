@@ -1,0 +1,13 @@
+<launch>
+    <!-- Launch Gazebo -->
+    <!-- Move Head Down -->
+
+    <!-- Launch program that published a downsampled and filtered pointcloud-->
+    <node pkg="nate_stretch_movement" type="pcl_for_nav_node" name="PCLforNavNode" output="screen">
+        <rosparam file="$(find nate_stretch_movement)/params/pcl_for_nav_params.yaml" command = "load"/>
+    </node>
+
+    <!-- Launch python node that follows walls -->
+    <node pkg="nate_stretch_movement" type="pcl_wf.py" name="PointCloudWallFollowe" output="screen"/>
+
+</launch>
