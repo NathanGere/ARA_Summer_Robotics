@@ -8,6 +8,6 @@
     </node>
 
     <!-- Launch python node that follows walls -->
-    <node pkg="nate_stretch_movement" type="pcl_wf.py" name="PointCloudWallFollowe" output="screen"/>
+    <node pkg="nate_stretch_movement" type="pcl_wf.py" name="PointCloudWallFollower" output="screen"/>
 
 </launch>

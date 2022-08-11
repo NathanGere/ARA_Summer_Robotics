@@ -314,6 +314,8 @@ catkin_install_python(PROGRAMS
   src/pcl_wall_follower.py
   src/sim_head_down.py
   src/pcl_wf.py
+  src/stretch_wall_follower.py
+  src/everything_wall_follower.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

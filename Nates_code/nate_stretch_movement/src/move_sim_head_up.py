@@ -34,14 +34,14 @@ class SimHeadUpDown:
         self.retrieved_joint_state = False
         #server_reached = self.trajectory_head_client.wait_for_server(timeout=rospy.Duration(60.0))
         start_time = time()
-        seconds = 4
+        seconds = 4.0
         while not rospy.is_shutdown():
             current_time = time()
             elapsed_time = current_time - start_time
             if self.retrieved_joint_state:
                 self.repo_calculator()
             if elapsed_time > seconds:
-                print("finished movement")
+                #print("finished movement")
                 #print(str(elapsed_time))
                 break
        
@@ -172,7 +172,7 @@ def middle_man():
 #############################################################################################################################################################
 if __name__ == '__main__':
     #setting up node
-    rospy.init_node("sim_head_down_node", anonymous = True)
+    rospy.init_node("move_sim_head_up_node", anonymous = True)
 
     #rospy.get_param("/stretch_head_controller/joints")
     try:
