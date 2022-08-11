@@ -52,11 +52,5 @@ bash home/csrobot/stretch_ws/src/ARA_Summer_Robotics/matt_code/matt_human_detect
 ```
 
 ## Note 2
-For the pcl human detector, try to move the robot camera directly angeled down to the floor. Use these two files listed below.
-
-```bash
-simulated_teleop.py
-n_keyboard.py
-```
-
-Use your keyboard to move the camera directly down to the floor, you will have to do this every time you re-launch gazebo!
+Use your keyboard to move the camera directly down to the floor.
+You will have to do this every time you re-launch gazebo!
