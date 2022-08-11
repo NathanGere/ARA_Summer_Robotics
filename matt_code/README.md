@@ -37,7 +37,9 @@ For the final project, I added my co-workers code to follow walls with pcl and l
 roslaunch stretch_gazebo gazebo.launch
 
 #Terminal 2:
-rosrun nate_stretch_movement simulated_teleop.py
+rosrun matt_human_detector simulated_teleop.py
+// hold down "," till the head is fully down and will not move anymore
+// you can close the program after, it is up to you
 
 #Terminal 3:
 roslaunch matt_human_detector lidar_wf.launch
