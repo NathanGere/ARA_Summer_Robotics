@@ -58,7 +58,7 @@ def seek_response(req):
 def call_back():
 
     print("Sucessfully made seeker_server node\n")
-    rospy.init_node("lidar_seeker_server")
+    rospy.init_node("pcl_seeker_server")
 
     print("----------------------------")
     print("Reentering Service file")

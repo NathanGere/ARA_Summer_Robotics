@@ -35,7 +35,7 @@ if __name__ == '__main__':
     print("----------------------------\n")
 
     print("Sucessfully made seeker_client node\n")
-    rospy.init_node("Lidar_Client_Node")
+    rospy.init_node("pcl_seeker_client")
 
     print("----------------------------")
     print("Reentering Client file")
