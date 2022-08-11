@@ -98,9 +98,8 @@
 
 <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
 
+<!-- Connect to ROS -->
 <script type="text/javascript">
-    
-    // Connect to Ros
 
     var ros = new ROSLIB.Ros({
     url : 'ws://localhost:2022'
@@ -117,8 +116,10 @@
     ros.on('close', function() {
     document.getElementById("status").innerHTML = "Closed";
     });
+</script>
 
-    // Connect to Ros Topics
+<!-- ROS Topics -->
+<script type="text/javascript">
 
     var alexa_topic = new ROSLIB.Topic({
         ros : ros,
@@ -147,8 +148,10 @@
     warning_topic.subscribe(function(m) {
         document.getElementById("warning_msgs").innerHTML = m.data;
     });
+</script>
 
-    //created functions
+<!-- Functions -->
+<script type="text/javascript">
 
     clear_msgs = function(){
         var str = new ROSLIB.Message({
@@ -189,13 +192,18 @@
         </a>
 
     </div>
-
     <br>
-    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
-    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
-    <h3>Connection Status: <span id="status"></span></h3>
+    <br>
 
-    <h3>Last Message Sent By Alexa: <span id="alexa_msgs"></span></h3>
+    <button type="button" class="collapsible"> Select to view additional information </button>
+    <div class="collapsibletext">
+        <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands</p>
+        <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
+        <h3>Connection Status: <span id="status"></span></h3>
+
+        <h3>Last Message Sent By Alexa: <span id="alexa_msgs"></span></h3>
+    </div>
+
     <h2 style="text-align: center">How do communicate with your Stretch Robot with Alexa?</h2>
 
     <button type="button" class="collapsible">How To Begin Your Command</button>
@@ -220,20 +228,53 @@
             </tr>
             <tr>
                 <td style="background-color: yellow">Drive Forward</td>
-                <td>This will have Stretch Robot drive forward a little</td>
+                <td>Stretch Robot will drive forward.</td>
             </tr>
             <tr>
                 <td style="background-color: yellow">Drive Back</td>
-                <td>This will have Stretch Robot drive backwards a little</td>
+                <td>Stretch Robot will drive backwards.</td>
             </tr>
             <tr>
-                <td style="background-color: yellow">Rotate Left</td>
-                <td>This will have Stretch Robot drive backwards a little</td>
+                <td style="background-color: yellow">Rotate The Base Left</td>
+                <td>Stretch Robot will turn to the left.</td>
             </tr>
             <tr>
-                <td style="background-color: yellow">Rotate Right</td>
-                <td>This will have Stretch Robot drive backwards a little</td>
+                <td style="background-color: yellow">Rotate The Base Right</td>
+                <td>Stretch Robot will turn to the right.</td>
             </tr>
+            <tr>
+                <td style="background-color: yellow">Move Lift Up</td>
+                <td>Stretch Robot's arm will lift up.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Move Lift Down</td>
+                <td>Stretch Robot's arm will move downwards.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Extend The Arm</td>
+                <td>Stretch Robot's arm will stretch out to increase in length.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Collapse The Arm</td>
+                <td>Stretch Robot's arm will retract to  decrease in lenth.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Turn The Wrist To The Left</td>
+                <td>Stretch Robot's gripper will close.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Turn The Wrist To The Right</td>
+                <td>Stretch Robot's gripper will close.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Open Gripper</td>
+                <td>Stretch Robot's gripper will open up.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Close Gripper</td>
+                <td>Stretch Robot's gripper will close.</td>
+            </tr>
+
         </table>
     </div>    
 
@@ -246,11 +287,15 @@
             </tr>
             <tr>
                 <td style="background-color: yellow">Stow Arm</td>
-                <td>Will move the arm from its current position into the stow position for easier storage and mobility</td>
+                <td>Will move the arm into the stow position for easier storage and mobility.</td>
             </tr>
             <tr>
                 <td style="background-color: yellow">Come Find Me</td>
-                <td>Will activate an action of the Robot to search the area and locate a person</td>
+                <td>Will activate an action of the Robot to search the area and locate a person.</td>
+            </tr>
+            <tr>
+                <td style="background-color: yellow">Run Demo</td>
+                <td>Will activate a premade demo to show the capibilities of Stretch.</td>
             </tr>
         </table>
     </div>

@@ -24,6 +24,7 @@
         font-size: 18px;
         font-weight: bolder;
         margin: 20px 10px;
+        text-size-adjust:inherit;
     }
     .changingpagecenter {
         display: flex;
@@ -92,9 +93,8 @@
 
 <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
 
+<!-- Connect to ROS -->
 <script type="text/javascript">
-    
-    // Connect to Ros
 
     var ros = new ROSLIB.Ros({
     url : 'ws://localhost:2022'
@@ -169,9 +169,10 @@
         </p>
     </div>
 
-    <button type="button" class="collapsible">What is the Full Interface?</button>
+    <button type="button" class="collapsible">What is the Variety Interface?</button>
     <div class="collapsibletext">
-        <p>This interface is the combination of the other three interfaces included</p>
+        <p>This interface is a combination of the joystick and the button interfaces. It allows you to use the joystick to
+            navigate while utilizing the buttons to minipulate the other portions of the Stretch Robot</p>
     </div>
 
     <br>
