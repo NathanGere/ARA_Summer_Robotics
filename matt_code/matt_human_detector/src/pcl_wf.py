@@ -6,7 +6,7 @@ from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
 #import ctypes
 #import struct
-from std_msgs.msg import Header, String
+from std_msgs.msg import *
 import numpy as np
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
@@ -51,6 +51,10 @@ class PCLWallFollower:
         #bugfix
         self.counter = 0
 
+        #tracker for if human located
+        self.bool_sub = rospy.Subscriber("talker", Bool, self.bool_cb)
+        self._m_bool = False
+
         #actually calling methods in the class
         while not rospy.is_shutdown():
             if self.scan_updated and self.cloud_updated:
@@ -76,6 +80,10 @@ class PCLWallFollower:
     def cloud_cb(self, cloud):
         self._cloud = cloud
         self.cloud_updated = True
+
+    #########################################################################################################################################################
+    def bool_cb(self, m_bool):
+        self._m_bool = m_bool
 
     #########################################################################################################################################################
     def cloud_calculations(self):
@@ -164,7 +172,11 @@ class PCLWallFollower:
         
             lost = False
         
-        if lost:
+        if self._m_bool:
+            
+            self._pub.publish(self.motor_cmd)
+
+        elif lost:
         
             self.explorer()
         

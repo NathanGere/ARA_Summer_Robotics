@@ -1,7 +1,7 @@
 <launch>
 
-<node pkg="matt_human_detector" type="seeker_client.py" name="Client_Node" output="screen" />
-
-<node pkg="matt_human_detector" type="seeker_server.py" name="Server_Node" output="screen" />
+    <node pkg="matt_human_detector" type="seeker_client.py" name="Client_Node" output="screen" />
+        
+    <node pkg="matt_human_detector" type="seeker_server.py" name="Server_Node" output="screen" />
 
 </launch>

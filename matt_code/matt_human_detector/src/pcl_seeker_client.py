@@ -27,7 +27,7 @@ def client_response():
 
 if __name__ == '__main__':
     m_bool = False
-
+    
     print("------------------------------------------------------------------------------------\n")
 
     print("----------------------------")
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     print("----------------------------\n")
 
     print("Sucessfully made seeker_client node\n")
-    rospy.init_node("seeker_client")
+    rospy.init_node("pcl_seeker_client")
 
     print("----------------------------")
     print("Reentering Client file")
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     pub = rospy.Publisher('talker', Bool, queue_size = 10)
     rate = rospy.Rate(10)
-    while m_bool == False and not rospy.is_shutdown():
+    while not rospy.is_shutdown() and m_bool == False:
         pub.publish(m_bool)
         m_bool = client_response()
         rate.sleep()

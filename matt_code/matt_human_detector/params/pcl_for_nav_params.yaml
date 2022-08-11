@@ -1,0 +1,8 @@
+cloud_param: "/camera/depth/color/points"
+cloud_output: "/pcl_for_nav/points"
+filter_field_name: "x"
+filter_limit_min: -0.4
+filter_limit_max: 0.0
+filter_field_name_2: "y"
+filter_limit_min_2: -0.4
+filter_limit_max_2: 0.4

@@ -26,6 +26,7 @@ class WallFollower:
         WFC.case_13_tracker = 0
         WFC.case_14_tracker = 0
         WFC.case_15_tracker = 0
+        
         #tracker for if human located
         WFC.bool_sub = rospy.Subscriber("talker", Bool, WFC.bool_cb)
         WFC._m_bool = False

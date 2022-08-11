@@ -3,11 +3,14 @@
     <!-- Move Head Down -->
 
     <!-- Launch program that published a downsampled and filtered pointcloud-->
-    <node pkg="nate_stretch_movement" type="pcl_for_nav_node" name="PCLforNavNode" output="screen">
-        <rosparam file="$(find nate_stretch_movement)/params/pcl_for_nav_params.yaml" command = "load"/>
+    <node pkg="matt_human_detector" type="pcl_for_nav_node" name="PCLforNavNode" output="screen">
+        <rosparam file="$(find matt_human_detector)/params/pcl_for_nav_params.yaml" command = "load"/>
     </node>
 
     <!-- Launch python node that follows walls -->
-    <node pkg="nate_stretch_movement" type="pcl_wf.py" name="PointCloudWallFollowe" output="screen"/>
+    <node pkg="matt_human_detector" type="pcl_wf.py" name="PCL_WF_Node" output="screen"/>
 
+    <node pkg="matt_human_detector" type="pcl_seeker_client.py" name="PCL_Client_Node" output="screen" />
+        
+    <node pkg="matt_human_detector" type="pcl_seeker_server.py" name="PCL_Server_Node" output="screen" />
 </launch>

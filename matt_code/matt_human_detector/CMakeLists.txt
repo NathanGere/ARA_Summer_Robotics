@@ -8,12 +8,22 @@ project(matt_human_detector)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  actionlib_msgs
+  control_msgs
+  geometry_msgs
+  message_generation
+  nav_msgs
+  rosbridge_server
   rospy
   roscpp
+  sensor_msgs
   std_msgs
   std_srvs
-  message_generation
-  rosbridge_server
+  tf
+  tf2
+  trajectory_msgs
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -135,7 +145,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/matt_human_detector_node.cpp)
+add_executable(pcl_for_nav_node src/pcl_for_nav.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -145,12 +155,12 @@ include_directories(
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(pcl_for_nav_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(pcl_for_nav_node
+   ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
@@ -161,18 +171,29 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
+
 catkin_install_python(PROGRAMS
-  src/seeker_server.py
+  src/lidar_seeker_server.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 catkin_install_python(PROGRAMS
-  src/seeker_client.py
+  src/lidar_seeker_client.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 catkin_install_python(PROGRAMS
   src/lidar_wf.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS
+  src/pcl_seeker_server.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_install_python(PROGRAMS
+  src/pcl_seeker_client.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
