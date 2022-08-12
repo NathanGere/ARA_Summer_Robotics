@@ -179,21 +179,21 @@
 
     // ROS Topics
 
-    var alexa_topic = new ROSLIB.Topic({
-    ros : ros,
-    name : '/alexa_msgs',
-    messageType : 'std_msgs/String'
-    });//to inform user alexa was used
-
     var cmd_vel_topic = new ROSLIB.Topic({
     ros : ros,
     name : "/stretch_diff_drive_controller/cmd_vel",
     messageType : 'geometry_msgs/Twist'
-    });//moves base
+    });//needed for joystick
 
     var command_topic = new ROSLIB.Topic({
         ros : ros,
-        name : '/client_command_topic',
+        name : '/client_command',
+        messageType : 'std_msgs/String'
+    });//to publish warnings while operating
+    
+    var warning_topic = new ROSLIB.Topic({
+        ros : ros,
+        name : '/client_warning',
         messageType : 'std_msgs/String'
     });//to publish warnings while operating
 
@@ -210,19 +210,19 @@
     // Functions
 
     move = function (linear_vel, angular_vel) {
-    var twist = new ROSLIB.Message({
-        linear: {
-        x: linear_vel,
-        y: 0,
-        z: 0
-        },
-        angular: {
-        x: 0,
-        y: 0,
-        z: angular_vel
-        }
-    });
-    cmd_vel_topic.publish(twist);
+        var twist = new ROSLIB.Message({
+            linear: {
+            x: linear_vel,
+            y: 0,
+            z: 0
+            },
+            angular: {
+            x: 0,
+            y: 0,
+            z: angular_vel
+            }
+        });
+        cmd_vel_topic.publish(twist);
     }
 
     publish_command_msgs = function(msg){
@@ -290,22 +290,22 @@
         <h2 style="text-align: center">Use These Buttons To Control The Arm</h2>
         <h3 style="text-align: center; color: black">Basic Arm Controls</h3>
         <div class="center" style="background-color: lavender">
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Move Arm Upwards')">Move Lift Up</button>
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Move Arm Downwards')">Move Lift Down</button>
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Extend Arm Out')">Extend Arm</button>
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Collapse Arm')">Collapse Arm</button>
-            </div>
+            <button type="button" class="buttondesign" onclick="publish_msgs('move lift upwards')">Move Lift Up</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('move lift downwards')">Move Lift Down</button>
+            <button type="button" class="buttondesign" onclick=" publish_msgs('make arm extend')">Extend Arm</button>
+            <button type="button" class="buttondesign" onclick=" publish_msgs('make arm collapse')">Collapse Arm</button>
+        </div>
 
         <h3 style="text-align: center; color: black">Wrist Controls</h3>
         <div class="center" style="background-color: lightgreen">
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Rotate Wrist to the Left')">Rotate Left</button>
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Rotate Wrist to the Right')">Rotate Right</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('rotate wrist left')">Rotate Left</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('rotate wrist right')">Rotate Right</button>
         </div>
 
         <h3 style="text-align: center; color: black">Gripper Controls</h3>
         <div class="center" style="background-color: lightpink">
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Open Gripper')">Open Gripper</button>
-            <button type="button" class="buttondesign" onclick="publish_command_msgs('Close Gripper')">Close Gripper</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('make gripper open')">Open Gripper</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('make gripper close')">Close Gripper</button>
         </div>
     </div>
 
