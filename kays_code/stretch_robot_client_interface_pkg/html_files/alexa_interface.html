@@ -98,7 +98,6 @@
 
 <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
 
-<!-- Connect to ROS -->
 <script type="text/javascript">
 
     var ros = new ROSLIB.Ros({
@@ -116,22 +115,12 @@
     ros.on('close', function() {
     document.getElementById("status").innerHTML = "Closed";
     });
-</script>
 
-<!-- ROS Topics -->
-<script type="text/javascript">
-
-    var alexa_topic = new ROSLIB.Topic({
+    var command_topic = new ROSLIB.Topic({
         ros : ros,
-        name : '/alexa_msgs',
+        name : '/client_command',
         messageType : 'std_msgs/String'
-    });//to inform user alexa was used
-
-    var cmd_vel_topic = new ROSLIB.Topic({
-        ros : ros,
-        name : "/stretch_diff_drive_controller/cmd_vel",
-        messageType : 'geometry_msgs/Twist'
-    });//moves base
+    });//to publish commands 
 
     var warning_topic = new ROSLIB.Topic({
         ros : ros,
@@ -148,10 +137,6 @@
     warning_topic.subscribe(function(m) {
         document.getElementById("warning_msgs").innerHTML = m.data;
     });
-</script>
-
-<!-- Functions -->
-<script type="text/javascript">
 
     clear_msgs = function(){
         var str = new ROSLIB.Message({
