@@ -76,7 +76,7 @@ void cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 }
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "pcl_for_nav_node");
+    ros::init(argc, argv, "stretch_pcl_for_nav_node");
     ros::NodeHandle n;
 
     //works in sim, may need a different input cloud_param for the actual robot
