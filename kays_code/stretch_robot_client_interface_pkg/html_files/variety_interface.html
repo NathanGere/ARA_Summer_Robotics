@@ -22,8 +22,8 @@
     .buttondesign{
         border: 10px solid black;
         background-color: white;
-        width: 150px;
-        height: 100px;
+        width: 200px;
+        height: 75px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
@@ -85,7 +85,6 @@
         overflow: hidden;
         transition: 0.2s ease-out;
     }
-    
     .collapsible:after {
         content: '\02795';  /* Unicode character for "plus" sign (+) */
         font-size: 13px;
@@ -159,9 +158,8 @@
 <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.js"></script>
 
+<!-- Connect to ROS -->
 <script type="text/javascript">
-
-    // Connect to Ros
 
     var ros = new ROSLIB.Ros({
     url : 'ws://localhost:2022'
@@ -179,55 +177,60 @@
     document.getElementById("status").innerHTML = "Closed";
     });
 
-    // Connect to Ros Topics
-
-    var alexa_topic = new ROSLIB.Topic({
-    ros : ros,
-    name : '/alexa_msgs',
-    messageType : 'std_msgs/String'
-    });//to inform user alexa was used
+    // ROS Topics
 
     var cmd_vel_topic = new ROSLIB.Topic({
     ros : ros,
     name : "/stretch_diff_drive_controller/cmd_vel",
     messageType : 'geometry_msgs/Twist'
-    });//moves base
+    });//needed for joystick
 
-    //  var arm_topic = new ROSLIB.Topic({
-    //    ros : ros,
-    //    name : "/stretch_arm_controller/??",
-    //    messageType : ''
-    //  });//includes lift, arm, and wrist
-
-    //  var gripper_topic = new ROSLIB.Topic({
-    //    ros : ros,
-    //    name : "/stretch_gripper_controller/??",
-    //    messageType : ''
-    //  });//just the fingers
+    var command_topic = new ROSLIB.Topic({
+        ros : ros,
+        name : '/client_command',
+        messageType : 'std_msgs/String'
+    });//to publish warnings while operating
     
+    var warning_topic = new ROSLIB.Topic({
+        ros : ros,
+        name : '/client_warning',
+        messageType : 'std_msgs/String'
+    });//to publish warnings while operating
+
     // Subscribers
 
     warning_topic.subscribe(function(m) {
-        document.getElementById("warning_msgs").innerHTML = m.data;
+    document.getElementById("warning_msgs").innerHTML = m.data;
     });
 
-    // Created functions
+    command_topic.subscribe(function(m) {
+        document.getElementById("commands_to_Stretch").innerHTML = m.data;
+    });
+
+    // Functions
 
     move = function (linear_vel, angular_vel) {
-    var twist = new ROSLIB.Message({
-        linear: {
-        x: linear_vel,
-        y: 0,
-        z: 0
-        },
-        angular: {
-        x: 0,
-        y: 0,
-        z: angular_vel
-        }
-    });
-    cmd_vel_topic.publish(twist);
+        var twist = new ROSLIB.Message({
+            linear: {
+            x: linear_vel,
+            y: 0,
+            z: 0
+            },
+            angular: {
+            x: 0,
+            y: 0,
+            z: angular_vel
+            }
+        });
+        cmd_vel_topic.publish(twist);
     }
+
+    publish_command_msgs = function(msg){
+        var str= new ROSLIB.Message({
+            data: String(msg)
+        });
+        command_topic.publish(str);
+    }// to send the last published message by buttons
 
 </script>
 </head>
@@ -261,15 +264,21 @@
         </a>
 
     </div>
-
     <br>
-    <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands!</p>
-    <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch.</p>
-    <h3>Connection Status: <span id="status"></span></h3>
-    
-    <h2>Check Here For Warnings: <span id="warning_msgs" style="background-color: red;"></span></h2>
-    <p style="font-weight: bold">After forced stop, you may need to press a button repeatedly to move Stretch</p>
-    <button type="button" class="buttondesign" style="font-size: 14px; width: 175px; height: 30px; border: 5px solid black;" onclick="clear_msgs()">Clear Warnings</button>
+    <br>
+
+    <button type="button" class="collapsible">How To Begin Your Command</button>
+    <div class="collapsibletext">
+        <p>Make sure that the Connection Status says <strong>Connected</strong> before giving Stretch commands!</p>
+        <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch.</p>
+        <h3>Connection Status: <span id="status"></span></h3>
+        
+        <h2>Check Here For Warnings: <span id="warning_msgs" style="background-color: red;"></span></h2>
+        <p style="font-weight: bold">After forced stop, you may need to press a button repeatedly to move Stretch</p>
+        <button type="button" class="buttondesign" style="font-size: 14px; width: 175px; height: 30px; border: 5px solid black;" onclick="clear_msgs()">Clear Warnings</button>
+
+        <h3>Last Message Sent to Stretch Robot by the buttons: <span id="commands_to_Stretch"></span></h3>
+    </div>
 
     <div class="middleofscreen split left">
         <h2 style="text-align: center">Use This Joystick For Driving</h2>
@@ -281,22 +290,22 @@
         <h2 style="text-align: center">Use These Buttons To Control The Arm</h2>
         <h3 style="text-align: center; color: black">Basic Arm Controls</h3>
         <div class="center" style="background-color: lavender">
-            <button type="button" class="buttondesign" onclick="movearm()">Move Lift Up</button>
-            <button type="button" class="buttondesign" onclick="movearm()">Move Lift Down</button>
-            <button type="button" class="buttondesign" onclick="movearm()">Extend Arm</button>
-            <button type="button" class="buttondesign" onclick="movearm()">Collapse Arm</button>
-            </div>
-    
+            <button type="button" class="buttondesign" onclick="publish_msgs('move lift upwards')">Move Lift Up</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('move lift downwards')">Move Lift Down</button>
+            <button type="button" class="buttondesign" onclick=" publish_msgs('make arm extend')">Extend Arm</button>
+            <button type="button" class="buttondesign" onclick=" publish_msgs('make arm collapse')">Collapse Arm</button>
+        </div>
+
         <h3 style="text-align: center; color: black">Wrist Controls</h3>
         <div class="center" style="background-color: lightgreen">
-            <button type="button" class="buttondesign" onclick="movearm()">Rotate Left</button>
-            <button type="button" class="buttondesign" onclick="movearm()">Rotate Right</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('rotate wrist left')">Rotate Left</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('rotate wrist right')">Rotate Right</button>
         </div>
-    
+
         <h3 style="text-align: center; color: black">Gripper Controls</h3>
         <div class="center" style="background-color: lightpink">
-            <button type="button" class="buttondesign" onclick="movearm()">Open Fingers</button>
-            <button type="button" class="buttondesign" onclick="movearm()">Close Fingers</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('make gripper open')">Open Gripper</button>
+            <button type="button" class="buttondesign" onclick="publish_msgs('make gripper close')">Close Gripper</button>
         </div>
     </div>
 
@@ -344,6 +353,25 @@
     window.onload = function () {
     createJoystick();
     }
-</script>    
+
+    //used for collapsible buttons
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
+    }
+</script>
+
 </body>
+
 </html>

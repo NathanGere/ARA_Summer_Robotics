@@ -1,23 +1,34 @@
 <launch>
+
+  <!-- ARGUMENTS -->
   <arg name="twist_topic" default="/stretch_diff_drive_controller/cmd_vel" />
   <arg name="laser_topic" default="/scan" />
   <arg name="warning_topic" default="/client_warning" />
 
+  <!-- ROSBRIDGE -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
 	  <param name="/rosbridge_websocket/port" value="2022" />
 
+  <!-- COLLISION PREVENTION CLIENT -->
   <node pkg="stretch_robot_client_interface_pkg" type="prevention_client_client_interface_application.py" name="prevention_client_client_server_application_node" output="screen">
     
     <remap from="/laser_scan" to="$(arg laser_topic)" />
     <remap from="/cmd_vel" to="$(arg twist_topic)" />
-    
+
   </node>
 
+  <!-- COLLISION PREVENTION SERVICE-->
   <node pkg="stretch_robot_client_interface_pkg" type="prevention_server_client_interface_application.py" name="prevention_server_client_interface_application_node" output="screen">
     
     <remap from="/cmd_vel" to="$(arg twist_topic)" />
     <remap from="/warning" to="$(arg warning_topic)" />
-    
+
   </node>
 
-</launch>
+  <node pkg="stretch_robot_client_interface_pkg" type="client_interface_msgs.py" name="client_interface_msgs_node" output="screen">
+
+    <remap from="/cmd_vel" to="$(arg twist_topic)" />
+
+  </node>
+
+  </launch>
