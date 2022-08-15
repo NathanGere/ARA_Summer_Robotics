@@ -20,13 +20,17 @@ import os
 class WallFollower:
     
     #########################################################################################################################################################
-    def __init__(self, twist_pub = rospy.Publisher("/stretch_diff_drive_controller/cmd_vel", Twist, queue_size=10), displays = True, forward_speed = 0.3, 
-                    max_turning_speed = -0.6, min_turning_speed_right = -0.3, min_turning_speed_left = 0.3):
+    def __init__(self, twist_pub = rospy.Publisher("/stretch_diff_drive_controller/cmd_vel", Twist, queue_size=10), displays = True, escape_loop_on = False, 
+                                                forward_speed = 0.3, max_turning_speed = -0.6, min_turning_speed_right = -0.3, min_turning_speed_left = 0.3):
         self._pub = twist_pub #wall follower publisher
         self._displays = displays
+        self._escape_loop_on = escape_loop_on
         self.motor_cmd = Twist() #motor command to be published in multiple methods
         #class attribute for intial print statements
         self.first_print = True
+        self.first_orient = True
+        self.first_distance = True
+        self.first_align = True
         #class attributes for initial setup of robot's orientation and position in relation to the nearest wall
         self.oriented = False
         self.close_enough = False
@@ -163,7 +167,8 @@ class WallFollower:
         indices_of_collisions = [3000] * 2000
 
         #calculating num of consecutive turns
-        self.consecutive_turns_tracker()
+        if self._escape_loop_on:
+            self.consecutive_turns_tracker()
 
         #calculating variable values
         distance_mem, index_mem, walls_nearby, crashed, indices_of_collisions = self.lost_and_crashed_calculations(size, distance_mem, index_mem, walls_nearby, 
@@ -204,13 +209,13 @@ class WallFollower:
             
             elif not self.close_enough:
             
-                self.get_closer()
+                self.get_closer(forward_cone)
             
             elif not self.aligned:
             
                 self.get_aligned(size, index_mem, distance_mem)
 
-            elif self.num_of_consecutive_left_turns > 7 or self.num_of_consecutive_right_turns > 7:
+            elif self._escape_loop_on and (self.num_of_consecutive_left_turns > 7 or self.num_of_consecutive_right_turns > 7):
                 
                 self.escape_circle(wall_on_right, wall_on_front_right, wall_on_front_left)
 
@@ -274,7 +279,7 @@ class WallFollower:
                                                                                                                                 right_turn, forward_cone):
 
         #elimating edge cases for making turns
-        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5:
+        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5 or self._scan.ranges[1020] >= 1.5:
             right_turn = True
 
         #will calculate which sides of the robot there are walls on
@@ -815,6 +820,12 @@ class WallFollower:
     #########################################################################################################################################################
     def get_oriented(self, size, index_mem, distance_mem):
 
+        if self._displays and self.first_orient:
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Orienting Robot to Face Nearest Wall")
+            print("\n---------------------------------------------------------------------------------------------------------")
+
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
         self.motor_cmd.angular.z = 0.0
@@ -851,15 +862,11 @@ class WallFollower:
             
                 self.motor_cmd.angular.z = -0.5
                 self._pub.publish(self.motor_cmd)
-                if self._displays:
-                    print("Orienting . . .") 
             
             else:
             
                 self.motor_cmd.angular.z = 0.5
                 self._pub.publish(self.motor_cmd)
-                if self._displays:
-                    print("Orienting . . .") 
             
         #if the robot is facing the wall, the orientation is complete
         else:
@@ -868,9 +875,16 @@ class WallFollower:
                 print("INITIAL ORIENTATION COMPLETE.")
 
         self.current_movement = "orienting"
+        self.first_orient = False
     
     #########################################################################################################################################################
-    def get_closer(self):
+    def get_closer(self, forward_cone):
+
+        if self._displays and self.first_distance:
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Establishing the Preferred Initial Distance of the Robot to the Wall")
+            print("\n---------------------------------------------------------------------------------------------------------")
 
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
@@ -887,30 +901,33 @@ class WallFollower:
                 print("PREFERED INITIAL DISTANCE ACHIEVED.")
         
         #if there is space, the robot will get closer to the wall
-        elif front > 0.5:
+        elif front > 0.5 and forward_cone:
         
             self.motor_cmd.linear.x = 0.3
             self._pub.publish(self.motor_cmd)
-            if self._displays:
-                print("Establishing initial distance . . .")
         
         #if the robot is too close, it will back up
         else:
             if self._scan.ranges[300] > 0.5:
                 self.motor_cmd.linear.x = -0.3
                 self._pub.publish(self.motor_cmd)
-                if self._displays:
-                    print("Establishing initial distance . . .")
             else:
                 self.close_enough = True
                 if self._displays:
-                    print("Space is tight. This is as far as we can get")
+                    print("Space is tight. This is best distance possible")
 
         self.current_movement = "establishing initial distance"
+        self.first_distance = False
 
     #########################################################################################################################################################
     def get_aligned(self, size, index_mem, distance_mem):
         
+        if self._displays and self.first_align:
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Aligning Robot to be Parallel with the Wall")
+            print("\n---------------------------------------------------------------------------------------------------------")
+
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
         self.motor_cmd.angular.z = 0.0
@@ -942,10 +959,9 @@ class WallFollower:
         
             self.motor_cmd.angular.z = 0.5
             self._pub.publish(self.motor_cmd)
-            if self._displays:
-                print("Completing first alignment . . .")
 
         self.current_movement = "aligning"
+        self.first_align = False
         
     #########################################################################################################################################################
     def right_wall_follower_with_displays(self, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone):
@@ -1425,13 +1441,15 @@ class WallFollower:
 
             num_of_consecutive_right turns will be reset to 0 if the current move is left turn and vice versa
         '''
+        '''
         if self.last_movement_made == "none" and self._displays:
 
             print("\n---------------------------------------------------------------------------------------------------------")
             print("\n\t Setting up the Consecutive Turns Tracker")
             print("\n---------------------------------------------------------------------------------------------------------")
+        '''
 
-        elif self.last_movement_made == "exploring" or self.current_movement == "exploring":
+        if self.last_movement_made == "exploring" or self.current_movement == "exploring":
             self.num_of_consecutive_right_turns = 0
             self.num_of_consecutive_left_turns = 0
 
@@ -1529,7 +1547,6 @@ class WallFollower:
             print("\n\t Running Wall Follower")
             print("\n---------------------------------------------------------------------------------------------------------")
             rospy.sleep(0.5)
-            print("\n#########################################################################################################")
         
         self.first_print = False
 
@@ -1695,7 +1712,7 @@ def main(path):
 
     try:
 
-        hd = SimHeadUpDown("forward", "down", 4.8)
+        hd = SimHeadUpDown("forward", "down", 5.2)
 
         wf = WallFollower()
         

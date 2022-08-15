@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 
     //works in sim, may need a different input cloud_param for the actual robot
     n.param<std::string>("cloud_param", cloud_param, "/camera/depth/color/points");
-    n.param<std::string>("cloud_output", cloud_output, "/pcl_for_nav/points");
+    n.param<std::string>("cloud_output", cloud_output, "/stretch_pcl_for_nav/points");
 
     ros::Subscriber sub = n.subscribe<sensor_msgs::PointCloud2>(cloud_param, 1, cloud_cb);
 

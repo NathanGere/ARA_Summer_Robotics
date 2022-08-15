@@ -1,25 +1,32 @@
 #!/usr/bin/env python
 
 import rospy
-#import ros_numpy
 from sensor_msgs.msg import PointCloud2, PointField
 import sensor_msgs.point_cloud2 as pc2
-#import ctypes
-#import struct
 from std_msgs.msg import Header, String
 import numpy as np
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
+from time import time
+import os
+import stretch_body.robot
+from stretch_body.hello_utils import ThreadServiceExit
 
 #############################################################################################################################################################
 class StretchWallFollower:
     
     #########################################################################################################################################################
-    def __init__(self, twist_pub = rospy.Publisher("/stretch/cmd_vel", Twist, queue_size=10), displays = True, forward_speed = 0.3, 
-                    max_turning_speed = -0.6, min_turning_speed_right = -0.3, min_turning_speed_left = 0.3):
+    def __init__(self, twist_pub = rospy.Publisher("/stretch//cmd_vel", Twist, queue_size=10), displays = True, escape_loop_on = False, 
+                                                forward_speed = 0.15, max_turning_speed = -0.3, min_turning_speed_right = -0.15, min_turning_speed_left = 0.15):
         self._pub = twist_pub #wall follower publisher
         self._displays = displays
+        self._escape_loop_on = escape_loop_on
         self.motor_cmd = Twist() #motor command to be published in multiple methods
+        #class attribute for intial print statements
+        self.first_print = True
+        self.first_orient = True
+        self.first_distance = True
+        self.first_align = True
         #class attributes for initial setup of robot's orientation and position in relation to the nearest wall
         self.oriented = False
         self.close_enough = False
@@ -42,14 +49,17 @@ class StretchWallFollower:
         self._max_turning_speed = max_turning_speed
         self._min_turning_speed_right = min_turning_speed_right
         self._min_turning_speed_left = min_turning_speed_left
+        #class attribute for type of movement last made
+        self.last_movement_made = "none"
+        self.current_movement = "none"
+        self.num_of_consecutive_right_turns = 0
+        self.num_of_consecutive_left_turns = 0
 
         #retrieving values for wall follower calculations
         self.cloud_sub = rospy.Subscriber("/stretch_pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
         self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.scan_cb)
         self._scan = LaserScan()
         self._cloud = PointCloud2()
-        #bugfix
-        self.counter = 0
 
         #actually calling methods in the class
         while not rospy.is_shutdown():
@@ -117,6 +127,9 @@ class StretchWallFollower:
     #########################################################################################################################################################
     def follow_walls_please(self, y_points, x_points, num_of_y_points):
 
+        if self.first_print:
+            self.initial_print()
+        
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
         self.motor_cmd.angular.z = 0.0
@@ -147,6 +160,10 @@ class StretchWallFollower:
         #will remeber locations of crashes to make best possible recovery assuming robot is still upright
         indices_of_collisions = [3000] * 2000
 
+        #calculating num of consecutive turns
+        if self._escape_loop_on:
+            self.consecutive_turns_tracker()
+
         #calculating variable values
         distance_mem, index_mem, walls_nearby, crashed, indices_of_collisions = self.lost_and_crashed_calculations(size, distance_mem, index_mem, walls_nearby, 
                                                                                                                 crashed, indices_of_collisions, num_of_y_points)
@@ -155,7 +172,7 @@ class StretchWallFollower:
         wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone = self.wall_conditions_calculations(y_points, x_points, 
                                                 num_of_y_points, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone)
 
-        #will activate explorer method in next loop of ros::spinOnce()
+        #will activate explorer method if lost
         if not walls_nearby:
         
             lost = True
@@ -186,11 +203,15 @@ class StretchWallFollower:
             
             elif not self.close_enough:
             
-                self.get_closer()
+                self.get_closer(forward_cone)
             
             elif not self.aligned:
             
                 self.get_aligned(size, index_mem, distance_mem)
+
+            elif self._escape_loop_on and (self.num_of_consecutive_left_turns > 7 or self.num_of_consecutive_right_turns > 7):
+                
+                self.escape_circle(wall_on_right, wall_on_front_right, wall_on_front_left)
 
             elif self._displays:
 
@@ -252,7 +273,7 @@ class StretchWallFollower:
                                                                                                                                 right_turn, forward_cone):
 
         #elimating edge cases for making turns
-        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5:
+        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5 or self._scan.ranges[1020] >= 1.5:
             right_turn = True
 
         #will calculate which sides of the robot there are walls on
@@ -346,6 +367,7 @@ class StretchWallFollower:
         else:
             self.reset = 0 #cycle back to previous conditions
         
+        self.current_movement = "exploring"
         self.reset+=1
     
     #########################################################################################################################################################
@@ -596,6 +618,8 @@ class StretchWallFollower:
         self._pub.publish(self.motor_cmd)
         recovery_time.sleep()
 
+        self.current_movement = "avoiding crash"
+
         #stopping robot before it crashes again
         self.motor_cmd.linear.x = 0.0
         self.motor_cmd.angular.z = 0.0
@@ -780,6 +804,8 @@ class StretchWallFollower:
         self._pub.publish(self.motor_cmd)
         recovery_time.sleep()
 
+        self.current_movement = "avoiding crash"
+
         #stopping robot before it crashes again
         self.motor_cmd.linear.x = 0
         self.motor_cmd.angular.z = 0
@@ -787,6 +813,12 @@ class StretchWallFollower:
     
     #########################################################################################################################################################
     def get_oriented(self, size, index_mem, distance_mem):
+
+        if self._displays and self.first_orient:
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Orienting Robot to Face Nearest Wall")
+            print("\n---------------------------------------------------------------------------------------------------------")
 
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
@@ -824,24 +856,29 @@ class StretchWallFollower:
             
                 self.motor_cmd.angular.z = -0.5
                 self._pub.publish(self.motor_cmd)
-                if self._displays:
-                    print("Orienting . . .") 
             
             else:
             
                 self.motor_cmd.angular.z = 0.5
                 self._pub.publish(self.motor_cmd)
-                if self._displays:
-                    print("Orienting . . .") 
             
         #if the robot is facing the wall, the orientation is complete
         else:
             self.oriented = True
             if self._displays:
                 print("INITIAL ORIENTATION COMPLETE.")
+
+        self.current_movement = "orienting"
+        self.first_orient = False
     
     #########################################################################################################################################################
-    def get_closer(self):
+    def get_closer(self, forward_cone):
+
+        if self._displays and self.first_distance:
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Establishing the Preferred Initial Distance of the Robot to the Wall")
+            print("\n---------------------------------------------------------------------------------------------------------")
 
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
@@ -858,28 +895,33 @@ class StretchWallFollower:
                 print("PREFERED INITIAL DISTANCE ACHIEVED.")
         
         #if there is space, the robot will get closer to the wall
-        elif front > 0.5:
+        elif front > 0.5 and forward_cone:
         
             self.motor_cmd.linear.x = 0.3
             self._pub.publish(self.motor_cmd)
-            if self._displays:
-                print("Establishing initial distance . . .")
         
         #if the robot is too close, it will back up
         else:
             if self._scan.ranges[300] > 0.5:
                 self.motor_cmd.linear.x = -0.3
                 self._pub.publish(self.motor_cmd)
-                if self._displays:
-                    print("Establishing initial distance . . .")
             else:
                 self.close_enough = True
                 if self._displays:
-                    print("Space is tight. This is as far as we can get")
+                    print("Space is tight. This is best distance possible")
+
+        self.current_movement = "establishing initial distance"
+        self.first_distance = False
 
     #########################################################################################################################################################
     def get_aligned(self, size, index_mem, distance_mem):
         
+        if self._displays and self.first_align:
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Aligning Robot to be Parallel with the Wall")
+            print("\n---------------------------------------------------------------------------------------------------------")
+
         #resetting motor_cmd
         self.motor_cmd.linear.x = 0.0
         self.motor_cmd.angular.z = 0.0
@@ -911,8 +953,9 @@ class StretchWallFollower:
         
             self.motor_cmd.angular.z = 0.5
             self._pub.publish(self.motor_cmd)
-            if self._displays:
-                print("Completing first alignment . . .")
+
+        self.current_movement = "aligning"
+        self.first_align = False
         
     #########################################################################################################################################################
     def right_wall_follower_with_displays(self, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone):
@@ -1225,6 +1268,25 @@ class StretchWallFollower:
                 print("\t----|^^^|----")
                 print("\t    |___|    ")
         
+        #calculations for current movement type
+        if self.motor_cmd.linear.x == self._forward_speed:
+            
+            if self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
+                self.current_movement = "moving forward and turning right"
+            
+            elif self.motor_cmd.angular.z == self._min_turning_speed_left:
+                self.current_movement = "moving forward and turning left"
+            
+            else:
+                self.current_movement = "moving forward"
+
+        elif self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
+            self.current_movement = "turning right"
+
+        else:
+            self.current_movement = "turning left"
+
+
         self._pub.publish(self.motor_cmd)
 
     ##########################################################################################################################################################
@@ -1341,21 +1403,287 @@ class StretchWallFollower:
 
             else:
                 self.motor_cmd.angular.z = self._min_turning_speed_left
+
+        #calculations for current movement type
+        if self.motor_cmd.linear.x == self._forward_speed:
+            
+            if self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
+                self.current_movement = "moving forward and turning right"
+            
+            elif self.motor_cmd.angular.z == self._min_turning_speed_left:
+                self.current_movement = "moving forward and turning left"
+            
+            else:
+                self.current_movement = "moving forward"
+
+        elif self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
+            self.current_movement = "turning right"
+
+        else:
+            self.current_movement = "turning left"
         
         self._pub.publish(self.motor_cmd)
+
+    ##########################################################################################################################################################
+    def consecutive_turns_tracker(self):
+        '''
+            last_movement values can be moved_forward, turned_left, avoided_crash, explored or turned_right
+            current_movement values can be the same
+
+            num_of_consecutive_right_turns will be incremented by 1 in the scenario that the current move is right turn and the last move was forward
+            vice versa for consecutive left_turns
+
+            num_of_consecutive_right turns will be reset to 0 if the current move is left turn and vice versa
+        '''
+        '''
+        if self.last_movement_made == "none" and self._displays:
+
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Setting up the Consecutive Turns Tracker")
+            print("\n---------------------------------------------------------------------------------------------------------")
+        '''
+
+        if self.last_movement_made == "exploring" or self.current_movement == "exploring":
+            self.num_of_consecutive_right_turns = 0
+            self.num_of_consecutive_left_turns = 0
+
+        elif self.last_movement_made == "moving forward":
+
+            if self.current_movement == "turning right" or self.current_movement == "moving forward and turning right":
+                self.num_of_consecutive_left_turns = 0
+                self.num_of_consecutive_right_turns+=1
+
+            elif self.current_movement == "turning left" or self.current_movement == "moving forward and turning left":
+                self.num_of_consecutive_right_turns = 0
+                self.num_of_consecutive_left_turns+=1
+        
+        elif self.last_movement_made == "turning left" or self.current_movement == "moving forward and turning left":
+
+            if self.current_movement == "turning right":
+                self.num_of_consecutive_left_turns = 0
+                self.num_of_consecutive_right_turns+=1
+
+        elif self.last_movement_made == "turning right" or self.current_movement == "moving forward and turning right":
+
+            if self.current_movement == "turning left":
+                self.num_of_consecutive_right_turns = 0
+                self.num_of_consecutive_left_turns+=1
+
+        self.last_movement_made = self.current_movement
+
+    ##########################################################################################################################################################
+    def escape_circle(self, wall_on_right, wall_on_front_right, wall_on_front_left):
+
+        #resetting motor cmds
+        self.motor_cmd.linear.x = 0.0
+        self.motor_cmd.angular.z = 0.0
+
+        if self.last_movement_made != "escaping loop" and self._displays:
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Initializing Escape Loop Procedure")
+            print("\n---------------------------------------------------------------------------------------------------------")
+
+        if wall_on_right:
+
+            #escape object stuck on
+            self.motor_cmd.angular.z = self._min_turning_speed_left
+
+        elif not wall_on_front_left and not wall_on_front_right:
+
+            #move towards a new wall hopefully
+            self.motor_cmd.linear.x = self._forward_speed
+
+        else:
+
+            #reset conditions to set up with new wall
+            self.num_of_consecutive_left_turns = 0
+            self.num_of_consecutive_right_turns = 0
+            self.oriented = False
+            self.close_enough = False
+            self.aligned = False
+
+        self.current_movement = "escaping loop"
+        self._pub.publish(self.motor_cmd)
+
+    ##########################################################################################################################################################
+    def initial_print(self):
+
+        if self._displays:
+
+            print("\n#########################################################################################################")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Initializing Wall Follower Program")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            rospy.sleep(0.5)
+            print("\n Active ROS Nodes:")
+            print("\n\t Node: PCLforNavNode")
+            print("\t . . . downsampling and filtering point cloud for navigation purposes")
+            #rospy.sleep(0.5)
+            print("\n\t Node: PointCloudWallFollower")
+            print("\t . . . subscribing to point cloud and laser scan")
+            #rospy.sleep(0.5)
+            print("\t . . . setting up wall follower functions")
+            rospy.sleep(0.5)
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Firing up Wall Follower Functions")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            rospy.sleep(0.5)
+            print("\n Wall Follower")
+            print("\n\t starting intial orientation program . . .")
+            #rospy.sleep(0.5)
+            print("\n\t starting wall recognition algorithm . . . ")
+            #rospy.sleep(0.5)
+            print("\n\t checking surroundings . . . ")
+            #rospy.sleep(0.5)
+            print("\n\t calculating variables . . . ")
+            rospy.sleep(0.5)
+            print("\n---------------------------------------------------------------------------------------------------------")
+            print("\n\t Running Wall Follower")
+            print("\n---------------------------------------------------------------------------------------------------------")
+            rospy.sleep(0.5)
+        
+        self.first_print = False
+
+#############################################################################################################################################################
+class HeadUpDown:
+
+    #########################################################################################################################################################
+    def __init__(self, current_position, desired_position, robot, displays = True):
+
+        self._current_position = current_position
+        self._desired_position = desired_position
+        self._robot = robot
+
+        '''
+        self.trajectory_head_client = actionlib.SimpleActionClient('/stretch_head_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+        self.rad_per_deg = math.pi / 180.0
+        self.medium_deg = 6.0
+        self.medium_rad = self.rad_per_deg * self.medium_deg
+        self.medium_translate = 0.04
+        self.joint_sub = rospy.Subscriber('/joint_states', JointState, self.joint_states_callback)
+        self._joint_state = JointState()
+        self.twist = Twist()
+        self.retrieved_joint_state = False
+        start_time = time()
+        self._seconds = seconds
+        '''
+        self._first_print = True
+        self._displays = displays
+
+        if self._first_print and self._displays:
+            self.initial_print()
+
+        self.repo_calculator()
+
+    #########################################################################################################################################################
+    def repo_calculator(self):
+
+        if self._desired_position == "forward":
+            self.repo_head_forward()
+
+        elif self._desired_position == "down":
+            self.repo_head_down()
+
+        else:
+            self.error_msg()
+    
+    #########################################################################################################################################################
+    def update_my_behavior(self, status):
+        #update the joint commands based on status data
+        pass
+
+    #########################################################################################################################################################
+    def repo_head_forward(self):
+
+        if self._current_position == "forward" and self._displays:
+            print("\n\tHead camera already in desired position.")
+
+        elif self._current_position == "down":
+            self.raise_up()
+
+        else:
+            self.error_msg() #needs to be in down position to be raised to forward straight position
+
+    #########################################################################################################################################################
+    def repo_head_down(self):
+
+        if self._current_position == "down" and self._displays:
+            print("/n/t Head camera already in desired position.")
+
+        elif self._current_position == "forward":
+            self.move_down()
+
+        else:
+            self.error_msg()
+
+    #########################################################################################################################################################
+    def raise_up(self):
+
+        self._robot.head.move_by('head_tilt', 1.57)
+        self._robot.push_command()
+        rospy.sleep(0.1)
+
+    #########################################################################################################################################################
+    def move_down(self):
+
+        self._robot.head.move_by('head_tilt', -1.57)
+        self._robot.push_command()
+        rospy.sleep(0.1)
+
+    #########################################################################################################################################################
+    def error_msg(self):
+        if self._displays:
+            print("\n\t\t:: HEAD POSITIONS ERROR ::")
+            print("\t Either the current position or desired position is incorrect\n")
+
+    #########################################################################################################################################################
+    def initial_print(self):
+
+        print("\n#########################################################################################################")
+        print("\n---------------------------------------------------------------------------------------------------------")
+        print("\n\t Repositioning Head Camera")
+        print("\n---------------------------------------------------------------------------------------------------------")
+
+        self._first_print = False
+
+##############################################################################################################################################################
+def fix_head_position():
+    os.system(path)
 
 ##############################################################################################################################################################
 
     # MAIN #
 
 ##############################################################################################################################################################
+def main(path):
+
+    #setting up stretch body
+    robot = stretch_body.robot.Robot()
+    robot.startup()
+    if not robot.is_calibrated():
+        robot.home() #blocking
+    robot.stow()
+
+    try:
+
+        hd = HeadUpDown("forward", "down", robot)
+
+        wf = StretchWallFollower()
+        
+        rospy.on_shutdown(fix_head_position)
+
+    except (rospy.ROSInterruptException, KeyboardInterrupt, SystemExit, ThreadServiceExit):
+        #hu = SimHeadUpDown("down", "forward", 15)
+        os.system(path)
+        pass
+
+    robot.stop()
+
 if __name__ == '__main__':
 
     #initializing node
     rospy.init_node("stretch_wall_follower_node", anonymous = True)
 
-    try:
-        stretch_wall_follower = StretchWallFollower(displays=False)
+    path = '/home/maru/stretch_ws/src/ARA_Summer_Robotics/Nates_code/nate_stretch_movement/src/move_head_up.sh'
 
-    except rospy.ROSInterruptException:
-        pass
+    main(path)
