@@ -1,9 +1,12 @@
 <launch>
 
   <!-- ARGUMENTS -->
-  <arg name="twist_topic" default="/stretch_diff_drive_controller/cmd_vel" />
   <arg name="laser_topic" default="/scan" />
   <arg name="warning_topic" default="/client_warning" />
+  <arg name="joint_states_topic" default="/joint_states" />
+    <arg name="twist_topic" default="/stretch_diff_drive_controller/cmd_vel" />
+  <arg name="arm_ActionClient" default="/stretch_arm_controller/follow_joint_trajectory" />
+  <arg name="gripper_ActionClient" default="/stretch_gripper_controller/follow_joint_trajectory" />
 
   <!-- ROSBRIDGE -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
@@ -25,9 +28,13 @@
 
   </node>
 
+  <!-- PYTHON FILE TO SEND COMMANDS TO STRETCH -->
   <node pkg="stretch_robot_client_interface_pkg" type="client_interface_msgs.py" name="client_interface_msgs_node" output="screen">
 
     <remap from="/cmd_vel" to="$(arg twist_topic)" />
+    <remap from="/arm_AC" to="$(arg arm_ActionClient)" />
+    <remap from="/gripper_AC" to="$(arg gripper_ActionClient)" />
+    <remap from="/joints" to="$(arg joint_states_topic)" />
 
   </node>
 

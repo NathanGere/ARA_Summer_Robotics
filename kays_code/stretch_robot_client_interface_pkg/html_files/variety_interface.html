@@ -189,7 +189,7 @@
         ros : ros,
         name : '/client_command',
         messageType : 'std_msgs/String'
-    });//to publish warnings while operating
+    });//to publish commands while operating
     
     var warning_topic = new ROSLIB.Topic({
         ros : ros,
@@ -203,11 +203,28 @@
     document.getElementById("warning_msgs").innerHTML = m.data;
     });
 
-    command_topic.subscribe(function(m) {
-        document.getElementById("commands_to_Stretch").innerHTML = m.data;
+    command_topic.subscribe(function(x) {
+        document.getElementById("commands_to_Stretch").innerHTML = x.data;
     });
 
     // Functions
+
+    // Functions
+    
+    clear_msgs = function(){
+        var str = new ROSLIB.Message({
+            data: ''
+        });
+        warning_topic.publish(str);
+    }
+
+    publish_msgs = function(msg){
+        var str= new ROSLIB.Message({
+            data: String(msg)
+        });
+        command_topic.publish(str);
+    }
+
 
     move = function (linear_vel, angular_vel) {
         var twist = new ROSLIB.Message({
@@ -224,13 +241,6 @@
         });
         cmd_vel_topic.publish(twist);
     }
-
-    publish_command_msgs = function(msg){
-        var str= new ROSLIB.Message({
-            data: String(msg)
-        });
-        command_topic.publish(str);
-    }// to send the last published message by buttons
 
 </script>
 </head>

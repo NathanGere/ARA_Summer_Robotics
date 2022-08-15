@@ -1,0 +1,19 @@
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = US
+ST = MA
+L = Lowell
+O = UMass Lowell ARA Lab
+CN = Stretch Skills
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @subject_alternate_names
+
+[subject_alternate_names]
+IP.1 = 192.168.50.204
