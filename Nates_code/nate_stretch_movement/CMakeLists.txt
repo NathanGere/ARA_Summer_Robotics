@@ -127,13 +127,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
-  ${catkin_INCLUDE_DIRS} src
+ include
+ ${catkin_INCLUDE_DIRS} src
 )
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
-   src/robot_driver.cpp
+ src/robot_driver.cpp
 )
 
 ## Add cmake target dependencies of the library
