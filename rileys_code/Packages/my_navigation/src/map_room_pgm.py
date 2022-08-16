@@ -19,8 +19,31 @@ get_map_service_name = rospy.get_param("~get_map_service_name", "static_map")   
 
 
 # Temp variable because the param doesnt exist yet
-time_before_intervention = 121
+time_before_intervention = 60
 
+
+# Functions
+def give_time_updates(time_left):
+     # 10 second countdown
+          if time_left <= 10:
+               print(int(time_left))
+               sleep(1)
+          # Hour mark
+          elif time_left % 3600 == 0:
+               hours_left = int(time_left/3600)
+               if hours_left == 1:
+                    print("{} hour left...".format(hours_left))
+               else:
+                    print("{} hours left...".format(hours_left))
+               sleep(1)
+          # Minute mark if under an hour
+          elif time_left % 60 == 0 and time_left < 3600:
+               minutes_left = int(time_left/60)
+               if minutes_left == 1:
+                    print("{} minute left...".format(minutes_left))
+               else:
+                    print("{} minutes left...".format(minutes_left))
+               sleep(1)
 
 # This file is the main file that will do the enitre autonomous mapping based off map_enclosed and map_explore
 # map_explore has not been made yet, and map_enclosed might need a function to convert possible wall gaps into xy coords
@@ -60,29 +83,9 @@ if __name__ == "__main__":
                     break
                # Reset the intervention timer by making start_time the current time
                start_time = int(time())
-          # 10 second countdown
-          elif time_left <= 10:
-               print(int(time_left))
-               sleep(1)
-          # Hour mark
-          elif time_left % 3600 == 0:
-               hours_left = int(time_left/3600)
-               if hours_left == 1:
-                    print("{} hour left...".format(hours_left))
-               else:
-                    print("{} hours left...".format(hours_left))
-               sleep(1)
-          # Minute mark if under an hour
-          elif time_left % 60 == 0 and time_left < 3600:
-               minutes_left = int(time_left/60)
-               if minutes_left == 1:
-                    print("{} minute left...".format(minutes_left))
-               else:
-                    print("{} minutes left...".format(minutes_left))
-               sleep(1)
-          
-               
-
+          else:
+               give_time_updates(time_left)
+            
      print("Completed.")
 
 

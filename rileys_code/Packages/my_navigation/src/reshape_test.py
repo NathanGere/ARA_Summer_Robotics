@@ -1,3 +1,4 @@
+# This is just a file made for testing reshape and 2D arrays
 import numpy
 
 list = []
