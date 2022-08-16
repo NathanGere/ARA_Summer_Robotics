@@ -279,7 +279,7 @@ class WallFollower:
                                                                                                                                 right_turn, forward_cone):
 
         #elimating edge cases for making turns
-        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5 or self._scan.ranges[1020] >= 1.5:
+        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5:
             right_turn = True
 
         #will calculate which sides of the robot there are walls on
@@ -901,7 +901,7 @@ class WallFollower:
                 print("PREFERED INITIAL DISTANCE ACHIEVED.")
         
         #if there is space, the robot will get closer to the wall
-        elif front > 0.5 and forward_cone:
+        elif front > 0.5:
         
             self.motor_cmd.linear.x = 0.3
             self._pub.publish(self.motor_cmd)
