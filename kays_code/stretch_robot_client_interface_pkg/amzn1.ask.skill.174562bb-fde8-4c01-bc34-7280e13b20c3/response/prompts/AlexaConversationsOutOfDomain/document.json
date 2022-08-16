@@ -1,0 +1,27 @@
+{
+  "type": "APLA",
+  "version": "0.8",
+  "resources": [
+    {
+      "string": {
+        "dontUnderstand": "Sorry, I don't understand."
+      }
+    },
+    {
+      "when": "${environment.alexaLocale == 'de-DE'}",
+      "string": {
+        "dontUnderstand": "Entschuldigung, das habe ich nicht verstanden."
+      }
+    }
+  ],
+  "mainTemplate": {
+    "parameters": [
+      "payload"
+    ],
+    "item": {
+      "type": "Speech",
+      "contentType": "PlainText",
+      "content": "@dontUnderstand"
+    }
+  }
+}

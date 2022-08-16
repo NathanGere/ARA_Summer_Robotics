@@ -1,0 +1,269 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "stretch robot",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "HelloWorldIntent",
+          "slots": [],
+          "samples": [
+            "hello",
+            "how are you",
+            "say hi world",
+            "say hi",
+            "hi",
+            "say hello world",
+            "say hello"
+          ]
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "DrivingIntent",
+          "slots": [
+            {
+              "name": "direction",
+              "type": "ForwardorBackward"
+            }
+          ],
+          "samples": [
+            "Drive {direction}",
+            "Continue driving {direction}",
+            "Continue moving {direction}",
+            "Drive base {direction}",
+            "Move {direction}"
+          ]
+        },
+        {
+          "name": "RotatingBaseIntent",
+          "slots": [
+            {
+              "name": "side",
+              "type": "BaseLeftorRight",
+              "multipleValues": {
+                "enabled": false
+              }
+            }
+          ],
+          "samples": [
+            "Move the base to the {side}",
+            "Rotate the base to the {side}",
+            "Move the base move {side}",
+            "Rotate the base {side}",
+            "Turn the base {side}",
+            "Turn to the {side}"
+          ]
+        },
+        {
+          "name": "LiftIntent",
+          "slots": [
+            {
+              "name": "move",
+              "type": "UporDown"
+            }
+          ],
+          "samples": [
+            "{move} lift",
+            "make tlif move {move}",
+            "move lift {move}"
+          ]
+        },
+        {
+          "name": "ArmIntent",
+          "slots": [
+            {
+              "name": "size",
+              "type": "InorOut"
+            }
+          ],
+          "samples": [
+            "move the arm {size}",
+            "{size} the arm",
+            "{size} arm",
+            "Move arm {size}"
+          ]
+        },
+        {
+          "name": "GripperIntent",
+          "slots": [
+            {
+              "name": "pinch",
+              "type": "OpenorClose"
+            }
+          ],
+          "samples": [
+            "Have gripper {pinch}",
+            "{pinch} gripper"
+          ]
+        },
+        {
+          "name": "WristIntent",
+          "slots": [
+            {
+              "name": "turn",
+              "type": "WristLeftorRight"
+            }
+          ],
+          "samples": [
+            "Move the wrist to the {turn}",
+            "Move the wrist {turn}",
+            "Turn the wrist to the {turn}",
+            "Rotate the wrist to the {turn}"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "right",
+                "synonyms": [
+                  "clockwise"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "left",
+                "synonyms": [
+                  "counterclockwise"
+                ]
+              }
+            }
+          ],
+          "name": "BaseLeftorRight"
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "back",
+                "synonyms": [
+                  "backward",
+                  "backwards"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "forward",
+                "synonyms": [
+                  "ahead",
+                  "forwards"
+                ]
+              }
+            }
+          ],
+          "name": "ForwardorBackward"
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "close",
+                "synonyms": [
+                  "together",
+                  "in"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "open",
+                "synonyms": [
+                  "apart",
+                  "out"
+                ]
+              }
+            }
+          ],
+          "name": "OpenorClose"
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "down",
+                "synonyms": [
+                  "lower"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "up",
+                "synonyms": [
+                  "raise",
+                  "lift"
+                ]
+              }
+            }
+          ],
+          "name": "UporDown"
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "out",
+                "synonyms": [
+                  "extend"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "in",
+                "synonyms": [
+                  "collapse"
+                ]
+              }
+            }
+          ],
+          "name": "InorOut"
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "left",
+                "synonyms": [
+                  "counterclockwise"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "right",
+                "synonyms": [
+                  "clockwise"
+                ]
+              }
+            }
+          ],
+          "name": "WristLeftorRight"
+        }
+      ]
+    }
+  },
+  "version": "56"
+}

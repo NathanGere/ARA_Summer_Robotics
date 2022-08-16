@@ -1,0 +1,27 @@
+{
+  "type": "APLA",
+  "version": "0.8",
+  "resources": [
+    {
+      "string": {
+        "help": "For ideas of things to ask, find this skill in the Alexa App to see example phrases and a description of the skill. How can I help you?"
+      }
+    },
+    {
+      "when": "${environment.alexaLocale == 'de-DE'}",
+      "string": {
+        "help": "Wenn du nicht weißt was du fragen sollst  suche diesen Skill in der Alexa App. Dort findest du Beispielphrasen und eine Beschreibung des Skill. Wie kann ich dir helfen?"
+      }
+    }
+  ],
+  "mainTemplate": {
+    "parameters": [
+      "payload"
+    ],
+    "item": {
+      "type": "Speech",
+      "contentType": "PlainText",
+      "content": "@help"
+    }
+  }
+}
