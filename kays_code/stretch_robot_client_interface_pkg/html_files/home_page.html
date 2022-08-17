@@ -34,8 +34,9 @@
     }
     .changingpagebuttondesign{
         border: 5px solid black;
-        background-color: hotpink;
-        padding: 30px 50px;
+        background-color: rgb(255, 94, 25);
+        width: 300px;
+        height: 100px;
         text-align: center;
         text-decoration: none ;
         display: inline-block;
@@ -117,14 +118,14 @@
 <!-- What the client sees -->
 
 <body>
-    <h1 style="text-align: center; color: blue;">Welcome to our Stretch Robot Home Page</h1>
+    <h1 style="text-align: center; color: rgb(129, 15, 70);">Welcome to our Stretch Robot Home Page</h1>
     <hr>
     <h2 style="text-align: center">Which Client Interface Are You Looking For?</h2>
 
     <div class="changingpagecenter">
-        <a href="joystick_interface.html">
+        <!--<a href="joystick_interface.html">
             <button class="changingpagebuttondesign">Joystick Interface</button>
-        </a>
+        </a>-->
 
         <a href="buttons_interface.html">
             <button class="changingpagebuttondesign">Button Interface</button>
@@ -147,12 +148,12 @@
     <h4 style="text-align: center">Select The Corresponding Dropdown Menu Below</h4>
 
     <br>
-    <button type="button" class="collapsible">What is the Joystick Interface?</button>
+    <!--<button type="button" class="collapsible">What is the Joystick Interface?</button>
     <div class="collapsibletext">
         <p>This interface includes a single joystick which can be used to drive the base of
             your Stretch Robot.
         </p>
-    </div>
+    </div>-->
 
     <button type="button" class="collapsible">What is the Button Interface?</button>
     <div class="collapsibletext">
@@ -181,6 +182,9 @@
     <p>If Connection Status is <strong>Closed</strong> please connect your connection to Stretch</p>
     <h3>Connection Status: <span id="status"></span></h3>
     
+    <br>
+    <br>
+    <br>
     <hr>
 
     <p style="text-align: center">Author: Kay Wojtowicz &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Organization: UMass Lowell ARA Lab</p>
