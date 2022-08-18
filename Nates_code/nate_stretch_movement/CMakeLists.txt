@@ -306,21 +306,25 @@ target_link_libraries(stretch_pcl_for_nav_node
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  src/robust_wall_follower.py
-  src/wf_var_setup.py
-  src/smart_wall_follower.py
-  src/wall_follower.py
-  src/head_repo.py
-  src/simulated_teleop.py
-  src/altered_sim_teleop.py
-  src/n_keyboard.py
-  src/pcl_wall_detector.py
-  src/sub_wall_detector.py
-  src/pcl_wall_follower.py
-  src/sim_head_down.py
-  src/pcl_wf.py
-  src/stretch_wall_follower.py
-  src/everything_wall_follower.py
+  scripts/robust_wall_follower.py
+  scripts/wf_var_setup.py
+  scripts/smart_wall_follower.py
+  scripts/wall_follower.py
+  scripts/head_repo.py
+  scripts/simulated_teleop.py
+  scripts/altered_sim_teleop.py
+  scripts/n_keyboard.py
+  scripts/pcl_wall_detector.py
+  scripts/sub_wall_detector.py
+  scripts/pcl_wall_follower.py
+  scripts/sim_head_down.py
+  scripts/pcl_wf.py
+  scripts/stretch_wall_follower.py
+  scripts/everything_wall_follower.py
+  scripts/robot_driver.py
+  scripts/sim_head_down.py
+  scripts/new_wall_follower.py
+  scripts/move_head_up.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

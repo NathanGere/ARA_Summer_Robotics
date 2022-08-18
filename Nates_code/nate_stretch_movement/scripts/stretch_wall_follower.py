@@ -7,21 +7,17 @@ from std_msgs.msg import Header, String
 import numpy as np
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
-import math
-from std_srvs.srv import Trigger, TriggerRequest
-from sensor_msgs.msg import JointState
-from control_msgs.msg import FollowJointTrajectoryGoal, FollowJointTrajectoryAction
-from trajectory_msgs.msg import JointTrajectoryPoint
-import actionlib
 from time import time
 import os
+import stretch_body.robot
+from stretch_body.hello_utils import ThreadServiceExit
 
 #############################################################################################################################################################
-class WallFollower:
+class StretchWallFollower:
     
     #########################################################################################################################################################
-    def __init__(self, twist_pub = rospy.Publisher("/stretch_diff_drive_controller/cmd_vel", Twist, queue_size=10), displays = True, escape_loop_on = False, 
-                                                forward_speed = 0.3, max_turning_speed = -0.6, min_turning_speed_right = -0.3, min_turning_speed_left = 0.3):
+    def __init__(self, twist_pub = rospy.Publisher("/stretch//cmd_vel", Twist, queue_size=10), displays = True, escape_loop_on = False, 
+                                                forward_speed = 0.15, max_turning_speed = -0.3, min_turning_speed_right = -0.15, min_turning_speed_left = 0.15):
         self._pub = twist_pub #wall follower publisher
         self._displays = displays
         self._escape_loop_on = escape_loop_on
@@ -60,12 +56,10 @@ class WallFollower:
         self.num_of_consecutive_left_turns = 0
 
         #retrieving values for wall follower calculations
-        self.cloud_sub = rospy.Subscriber("/pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
+        self.cloud_sub = rospy.Subscriber("/stretch_pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
         self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.scan_cb)
         self._scan = LaserScan()
         self._cloud = PointCloud2()
-        #bugfix
-        self.counter = 0
 
         #actually calling methods in the class
         while not rospy.is_shutdown():
@@ -279,7 +273,7 @@ class WallFollower:
                                                                                                                                 right_turn, forward_cone):
 
         #elimating edge cases for making turns
-        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5:
+        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5 or self._scan.ranges[1020] >= 1.5:
             right_turn = True
 
         #will calculate which sides of the robot there are walls on
@@ -901,7 +895,7 @@ class WallFollower:
                 print("PREFERED INITIAL DISTANCE ACHIEVED.")
         
         #if there is space, the robot will get closer to the wall
-        elif front > 0.5:
+        elif front > 0.5 and forward_cone:
         
             self.motor_cmd.linear.x = 0.3
             self._pub.publish(self.motor_cmd)
@@ -1551,13 +1545,16 @@ class WallFollower:
         self.first_print = False
 
 #############################################################################################################################################################
-class SimHeadUpDown:
+class HeadUpDown:
 
     #########################################################################################################################################################
-    def __init__(self, current_position, desired_position, seconds, displays = True):
+    def __init__(self, current_position, desired_position, robot, displays = True):
 
         self._current_position = current_position
         self._desired_position = desired_position
+        self._robot = robot
+
+        '''
         self.trajectory_head_client = actionlib.SimpleActionClient('/stretch_head_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
         self.rad_per_deg = math.pi / 180.0
         self.medium_deg = 6.0
@@ -1569,22 +1566,14 @@ class SimHeadUpDown:
         self.retrieved_joint_state = False
         start_time = time()
         self._seconds = seconds
+        '''
         self._first_print = True
         self._displays = displays
 
-        while True:
+        if self._first_print and self._displays:
+            self.initial_print()
 
-            if self._first_print and self._displays:
-                self.initial_print()
-
-            current_time = time()
-            elapsed_time = current_time - start_time
-
-            if self.retrieved_joint_state:
-                self.repo_calculator()
-
-            if elapsed_time > self._seconds:
-                break
+        self.repo_calculator()
 
     #########################################################################################################################################################
     def repo_calculator(self):
@@ -1599,15 +1588,9 @@ class SimHeadUpDown:
             self.error_msg()
     
     #########################################################################################################################################################
-    def joint_states_callback(self, joint_state):
-        self._joint_state = joint_state
-        self.retrieved_joint_state = True
-
-    #########################################################################################################################################################
-    def get_deltas(self):
-
-        deltas = {'rad': self.medium_rad, 'translate': self.medium_translate}
-        return deltas
+    def update_my_behavior(self, status):
+        #update the joint commands based on status data
+        pass
 
     #########################################################################################################################################################
     def repo_head_forward(self):
@@ -1635,53 +1618,17 @@ class SimHeadUpDown:
 
     #########################################################################################################################################################
     def raise_up(self):
-        command = {'joint': 'joint_head_tilt', 'delta': (2.0 * self.get_deltas()['rad'])}
-        #command = {'joint': 'joint_head_tilt', 'delta': -(2.0 * self.get_deltas()['rad'])}
-        #self._sim_teleop.send_command(command)
-        self.send_command(command)
+
+        self._robot.head.move_by('head_tilt', 1.57)
+        self._robot.push_command()
+        rospy.sleep(0.1)
 
     #########################################################################################################################################################
     def move_down(self):
-        command = {'joint': 'joint_head_tilt', 'delta': -(2.0 * self.get_deltas()['rad'])}
-        #self._sim_teleop.send_command(command)
-        self.send_command(command)
 
-    #########################################################################################################################################################
-    def send_command(self, command):
-        
-        joint_state = self._joint_state
-
-        point = JointTrajectoryPoint()
-        point.time_from_start = rospy.Duration(0.2)
-        trajectory_goal = FollowJointTrajectoryGoal()
-        trajectory_goal.goal_time_tolerance = rospy.Time(1.0)
-
-        joint_name = command['joint']
-
-        if joint_name in ['joint_lift', 'joint_wrist_yaw', 'joint_head_pan', 'joint_head_tilt']:
-            trajectory_goal.trajectory.joint_names = [joint_name]
-            joint_index = joint_state.name.index(joint_name)
-            joint_value = joint_state.position[joint_index]
-            delta = command['delta']
-            new_value = joint_value + delta
-            point.positions = [new_value]
-        elif joint_name in ["joint_gripper_finger_left", "wrist_extension"]:
-            if joint_name == "joint_gripper_finger_left":
-                trajectory_goal.trajectory.joint_names = ['joint_gripper_finger_left', 'joint_gripper_finger_right']
-            else:
-                trajectory_goal.trajectory.joint_names = ['joint_arm_l0','joint_arm_l1', 'joint_arm_l2', 'joint_arm_l3']
-            positions = []
-            for j_name in trajectory_goal.trajectory.joint_names:
-                joint_index = joint_state.name.index(j_name)
-                joint_value = joint_state.position[joint_index]
-                delta = command['delta']
-                new_value = joint_value + delta/len(trajectory_goal.trajectory.joint_names)
-                positions.append(new_value)
-            point.positions = positions
-
-        trajectory_goal.trajectory.points = [point]
-        trajectory_goal.trajectory.header.stamp = rospy.Time.now()
-        self.trajectory_head_client.send_goal(trajectory_goal)
+        self._robot.head.move_by('head_tilt', -1.57)
+        self._robot.push_command()
+        rospy.sleep(0.1)
 
     #########################################################################################################################################################
     def error_msg(self):
@@ -1710,24 +1657,33 @@ def fix_head_position():
 ##############################################################################################################################################################
 def main(path):
 
+    #setting up stretch body
+    robot = stretch_body.robot.Robot()
+    robot.startup()
+    if not robot.is_calibrated():
+        robot.home() #blocking
+    robot.stow()
+
     try:
 
-        hd = SimHeadUpDown("forward", "down", 5.2)
+        hd = HeadUpDown("forward", "down", robot)
 
-        wf = WallFollower()
+        wf = StretchWallFollower()
         
         rospy.on_shutdown(fix_head_position)
 
-    except rospy.ROSInterruptException:
+    except (rospy.ROSInterruptException, KeyboardInterrupt, SystemExit, ThreadServiceExit):
         #hu = SimHeadUpDown("down", "forward", 15)
         os.system(path)
         pass
 
+    robot.stop()
+
 if __name__ == '__main__':
 
     #initializing node
-    rospy.init_node("everything_wall_follower_node", anonymous = True)
+    rospy.init_node("stretch_wall_follower_node", anonymous = True)
 
-    path = '/home/csrobot/stretch_ws/src/ARA_Summer_Robotics/Nates_code/nate_stretch_movement/src/move_sim_head_up.sh'
+    path = '/home/maru/stretch_ws/src/ARA_Summer_Robotics/Nates_code/nate_stretch_movement/bash/move_head_up.sh'
 
     main(path)
