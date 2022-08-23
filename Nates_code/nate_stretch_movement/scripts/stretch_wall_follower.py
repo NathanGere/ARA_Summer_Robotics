@@ -1684,6 +1684,6 @@ if __name__ == '__main__':
     #initializing node
     rospy.init_node("stretch_wall_follower_node", anonymous = True)
 
-    path = '/home/maru/stretch_ws/src/ARA_Summer_Robotics/Nates_code/nate_stretch_movement/src/move_head_up.sh'
+    path = '/home/maru/stretch_ws/src/ARA_Summer_Robotics/Nates_code/nate_stretch_movement/bash/move_head_up.sh'
 
     main(path)

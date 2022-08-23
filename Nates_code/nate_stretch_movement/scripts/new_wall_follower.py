@@ -60,7 +60,7 @@ class WallFollower:
         self.num_of_consecutive_left_turns = 0
 
         #retrieving values for wall follower calculations
-        self.cloud_sub = rospy.Subscriber("/pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
+        #self.cloud_sub = rospy.Subscriber("/pcl_for_nav/points", PointCloud2, self.cloud_cb, queue_size = 1, buff_size = 52428800)
         self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.scan_cb)
         self._scan = LaserScan()
         self._cloud = PointCloud2()
@@ -69,7 +69,7 @@ class WallFollower:
 
         #actually calling methods in the class
         while not rospy.is_shutdown():
-            if self.scan_updated and self.cloud_updated:
+            if self.scan_updated: #and self.cloud_updated:
                 self.setup_wall_follower()
 
     #########################################################################################################################################################
@@ -163,20 +163,32 @@ class WallFollower:
         index_mem = 0
         distance_mem = 0.0
 
+        #for wall identifier method
+        num_of_walls = 0
+        wall_starting_positions = [0] * 100
+        wall_ending_positions = [0] * 100
+
         #will remeber locations of crashes to make best possible recovery assuming robot is still upright
         indices_of_collisions = [3000] * 2000
 
+        '''
         #calculating num of consecutive turns
         if self._escape_loop_on:
             self.consecutive_turns_tracker()
+        '''
 
         #calculating variable values
-        distance_mem, index_mem, walls_nearby, crashed, indices_of_collisions = self.lost_and_crashed_calculations(size, distance_mem, index_mem, walls_nearby, 
+        distance_mem, index_mem, walls_nearby, crashed, indices_of_collisions = self.lost_and_crashed_calculations(size, distance_mem, index_mem, walls_nearby,
                                                                                                                 crashed, indices_of_collisions, num_of_y_points)
         
+        #wall identifier
+        num_of_walls, wall_starting_positions, wall_ending_positions = self.wall_identifier(size, num_of_walls, wall_starting_positions, wall_ending_positions)
+
+        '''
         #calculating conditions based on laserscan / point cloud
         wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone = self.wall_conditions_calculations(y_points, x_points, 
                                                 num_of_y_points, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone)
+        '''
 
         #will activate explorer method if lost
         if not walls_nearby:
@@ -217,15 +229,12 @@ class WallFollower:
 
             elif self._escape_loop_on and (self.num_of_consecutive_left_turns > 7 or self.num_of_consecutive_right_turns > 7):
                 
-                self.escape_circle(wall_on_right, wall_on_front_right, wall_on_front_left)
-
-            elif self._displays:
-
-                self.right_wall_follower_with_displays(wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone)
+                #self.escape_circle(wall_on_right, wall_on_front_right, wall_on_front_left)
+                pass
 
             else:
 
-                self.right_wall_follower_without_displays(wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone)
+                self.right_wall_follower(num_of_walls, wall_starting_positions, wall_ending_positions)
     
     #########################################################################################################################################################
     def lost_and_crashed_calculations(self, size, distance_mem, index_mem, walls_nearby, crashed, indices_of_collisions, num_of_y_points):
@@ -275,11 +284,86 @@ class WallFollower:
         return distance_mem, index_mem, walls_nearby, crashed, indices_of_collisions
 
     #########################################################################################################################################################
+    def wall_identifier(self, size, num_of_walls, wall_starting_positions, wall_ending_positions):
+
+        #iteration variable
+        i = 0
+        indices_of_walls = [3000] * 2000
+        #distances_of_walls = [3000] * 2000
+        
+        #will loop to check all indices of the laser scan
+        while i < size:
+        
+            if self._scan.ranges[i] < 0.4: #will store values of walls within 5 meters
+            
+                indices_of_walls[i] = i
+                #distances_of_walls[i] = self._scan.ranges[i]
+            
+            else: #will give empty values to walls not within 5 meters
+            
+                indices_of_walls[i] = 0
+                #distances_of_walls[i] = 0
+            
+            i+=1
+        
+        i = 821
+        while i < 1890:
+        
+            if indices_of_walls[i] != 0: #if there is a wall at an index
+            
+                if i == 821: #if first index
+                
+                    num_of_walls+=1
+                    wall_starting_positions[num_of_walls] = i
+
+                    if indices_of_walls[i+1] == 0:
+                    
+                        wall_ending_positions[num_of_walls] = i
+                    
+                    #print("\nThere is a wall at index 0")
+                
+                elif i == 1890: #if last index
+                
+                    wall_ending_positions[num_of_walls] = i
+                    if indices_of_walls[i-1] == 0:
+                    
+                        wall_starting_positions[num_of_walls] = i
+                        num_of_walls+=1
+                    
+                    #print("\nThere is a wall at index 1999")
+                
+                else: #if any middle indexes
+                
+                    if indices_of_walls[i-1] == 0: #check if wall is continuous before
+                    
+                        num_of_walls+=1
+                        wall_starting_positions[num_of_walls] = i
+                    
+                    if indices_of_walls[i+1] == 0: #check if wall is continuous after
+                    
+                        wall_ending_positions[num_of_walls] = i
+                    
+                    #print("\nThere is a wall at index %d", i)
+                
+            
+            i+=1
+        
+        #print("\nThe number of walls detected is: " + str(num_of_walls))
+
+        printer = num_of_walls
+        while printer > 0:
+        
+            print("\nOne wall is located between scan.ranges[" + str(wall_starting_positions[printer]) + "] and scan.ranges[" + str(wall_ending_positions[printer]) + "]")
+            printer = printer - 1
+
+        return num_of_walls, wall_starting_positions, wall_ending_positions
+       
+    #########################################################################################################################################################
     def wall_conditions_calculations(self, y_points, x_points, num_of_y_points, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, 
                                                                                                                                 right_turn, forward_cone):
 
         #elimating edge cases for making turns
-        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5 or self._scan.ranges[1020] >= 1.5:
+        if self._scan.ranges[1361] >= 0.8 or self._scan.ranges[1200] >= 1.5:
             right_turn = True
 
         #will calculate which sides of the robot there are walls on
@@ -816,7 +900,7 @@ class WallFollower:
         self.motor_cmd.linear.x = 0
         self.motor_cmd.angular.z = 0
         self._pub.publish(self.motor_cmd)
-    
+
     #########################################################################################################################################################
     def get_oriented(self, size, index_mem, distance_mem):
 
@@ -901,7 +985,7 @@ class WallFollower:
                 print("PREFERED INITIAL DISTANCE ACHIEVED.")
         
         #if there is space, the robot will get closer to the wall
-        elif front > 0.5 and forward_cone:
+        elif front > 0.5:
         
             self.motor_cmd.linear.x = 0.3
             self._pub.publish(self.motor_cmd)
@@ -962,556 +1046,39 @@ class WallFollower:
 
         self.current_movement = "aligning"
         self.first_align = False
-        
+
     #########################################################################################################################################################
-    def right_wall_follower_with_displays(self, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone):
+    def right_wall_follower(self, num_of_walls, wall_starting_positions, wall_ending_positions):
         
-        #resetting motor_cmd
+        #resetting motor commands
         self.motor_cmd.linear.x = 0.0
         self.motor_cmd.angular.z = 0.0
-
-        #calculations for switch statement
-        r = 0
-        fr = 0
-        fl = 0
-        l = 0
-        #setting up calculators
-        if wall_on_right:
-            r = 1
-        if wall_on_front_right:
-            fr = 2
-        if wall_on_front_left:
-            fl = 4
-        if wall_on_left:
-            l = 8
-        #var for condtions
-        wall_locations =  l + fl + fr + r
         
-        if wall_locations == 0: #no walls
-            print("\ncase 0")
-            self.motor_cmd.linear.x = self._forward_speed
+        if num_of_walls == 0:
+
             self.motor_cmd.angular.z = self._max_turning_speed
-            print("\t_____________")
-            print("\t|\    |    /|")
-            print("\t| \   |   / |")
-            print("\t|  \  |  /  |")
-            print("\t|   \ | /   |")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-
-        elif wall_locations == 1: #wall on right
-            print("\ncase 1")
-            self.motor_cmd.linear.x = self._forward_speed
-            print("\t_____________")
-            print("\t|\    |    /|")
-            print("\t| \   |   /#|")
-            print("\t|  \  |  /##|")
-            print("\t|   \ | /###|")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-
-        elif wall_locations == 2: #wall on front right
-            print("\ncase 2")
-            '''
-            if right_turn:
-                self.motor_cmd.angular.z = min_turning_speed_right
-                print("\t_____________")
-                print("\t|\    |####/|")
-                print("\t| \   |###/ |")
-                print("\t|  \  |##/  |")
-                print("\t|   \ |#/RRR|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-            else:
-            '''
-            self.motor_cmd.angular.z = self._min_turning_speed_left
-            print("\t_____________")
-            print("\t|\    |####/|")
-            print("\t| \   |###/ |")
-            print("\t|  \  |##/  |")
-            print("\t|   \ |#/   |")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-
-        elif wall_locations == 3: #wall on right and front right
-            print("\ncase 3")
-            self.motor_cmd.angular.z = self._min_turning_speed_left
-            print("\t_____________")
-            print("\t|\    |####/|")
-            print("\t| \   |###/#|")
-            print("\t|  \  |##/##|")
-            print("\t|   \ |#/###|")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-
-        elif wall_locations == 4: #wall on front left
-            print("\ncase 4")
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-                print("\t_____________")
-                print("\t|\####|    /|")
-                print("\t| \###|   / |")
-                print("\t|  \##|  /  |")
-                print("\t|   \#| /RRR|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\####|    /|")
-                print("\t| \###|   / |")
-                print("\t|  \##|  /  |")
-                print("\t|   \#| /   |")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        #CALCULATIONS REQ
-        elif wall_locations == 5: #wall on front left and right
-            print("\ncase 5")
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-                print("\t_____________")
-                print("\t|\###|||   /|")
-                print("\t| \##|||  /#|")
-                print("\t|  \#||| /##|")
-                print("\t|   \|||/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-                print("\t_____________")
-                print("\t|\####|    /|")
-                print("\t| \###|   /#|")
-                print("\t|  \##|  /##|")
-                print("\t|   \#| /###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        #CALCULATIONS REQ?
-        elif wall_locations == 6: #wall on front left and front right
-            print("\ncase 6")
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-                print("\t_____________")
-                print("\t|\####|####/|")
-                print("\t| \###|###/ |")
-                print("\t|  \##|##/  |")
-                print("\t|   \#|#/RRR|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\####|####/|")
-                print("\t| \###|###/ |")
-                print("\t|  \##|##/  |")
-                print("\t|   \#|#/   |")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        elif wall_locations == 7: #wall on right, front right, and front left
-            print("\ncase 7")
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-                print("\t_____________")
-                print("\t|\###|||###/|")
-                print("\t| \##|||##/#|")
-                print("\t|  \#|||#/##|")
-                print("\t|   \|||/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\####|####/|")
-                print("\t| \###|###/#|")
-                print("\t|  \##|##/##|")
-                print("\t|   \#|#/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        elif wall_locations == 8: #wall on left
-            print("\ncase 8")
-            self.motor_cmd.linear.x = self._forward_speed
-            self.motor_cmd.angular.z = self._max_turning_speed
-            print("\t_____________")
-            print("\t|\    |    /|")
-            print("\t|#\   |   / |")
-            print("\t|##\  |  /  |")
-            print("\t|###\ | /   |")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-
-        elif wall_locations == 9: #wall on right and left
-            print("\ncase 9")
-            self.motor_cmd.linear.x = self._forward_speed
-            print("\t_____________")
-            print("\t|\    |    /|")
-            print("\t|#\   |   /#|")
-            print("\t|##\  |  /##|")
-            print("\t|###\ | /###|")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-                
-
-        elif wall_locations == 10: #wall on front right and left
-            print("\ncase 10")
-            self.motor_cmd.angular.z = self._min_turning_speed_right
-            print("\t_____________")
-            print("\t|\    |####/|")
-            print("\t|#\   |###/ |")
-            print("\t|##\  |##/  |")
-            print("\t|###\ |#/   |")
-            print("\t----|^^^|----")
-            print("\t    |___|    ")
-
-        #CALCULATIONS REQ
-        elif wall_locations == 11: #wall on right, front right, and left
-            print("\ncase 11")
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-                print("\t_____________")
-                print("\t|\   |||###/|")
-                print("\t|#\  |||##/#|")
-                print("\t|##\ |||#/##|")
-                print("\t|###\|||/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\    |####/|")
-                print("\t|#\   |###/#|")
-                print("\t|##\  |##/##|")
-                print("\t|###\ |#/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        elif wall_locations == 12: #wall on left and front left
-            print("\ncase 12")
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-                print("\t_____________")
-                print("\t|\####|    /|")
-                print("\t|#\###|   / |")
-                print("\t|##\##|  /  |")
-                print("\t|###\#| /RRR|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\####|    /|")
-                print("\t|#\###|   / |")
-                print("\t|##\##|  /  |")
-                print("\t|###\#| /   |")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        #CALCULATIONS REQ
-        elif wall_locations == 13: #wall on left, front left, and right
-            print("\ncase 13")
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-                print("\t_____________")
-                print("\t|\###|||   /|")
-                print("\t|#\##|||  /#|")
-                print("\t|##\#||| /##|")
-                print("\t|###\|||/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-                print("\t_____________")
-                print("\t|\####|    /|")
-                print("\t|#\###|   /#|")
-                print("\t|##\##|  /##|")
-                print("\t|###\#| /###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        elif wall_locations == 14: #wall on left, front left, and front right
-            print("\ncase 14")
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-                print("\t_____________")
-                print("\t|\####|####/|")
-                print("\t|#\###|###/ |")
-                print("\t|##\##|##/  |")
-                print("\t|###\#|#/RRR|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\####|####/|")
-                print("\t|#\###|###/ |")
-                print("\t|##\##|##/  |")
-                print("\t|###\#|#/   |")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-
-        #CALCULATIONS REQ
-        elif wall_locations == 15: #wall on right, front right, front left, and left
-            print("\ncase 15")
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-                print("\t_____________")
-                print("\t|\###|||###/|")
-                print("\t|#\##|||##/#|")
-                print("\t|##\#|||#/##|")
-                print("\t|###\|||/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-                print("\t_____________")
-                print("\t|\####|####/|")
-                print("\t|#\###|###/#|")
-                print("\t|##\##|##/##|")
-                print("\t|###\#|#/###|")
-                print("\t----|^^^|----")
-                print("\t    |___|    ")
-        
-        #calculations for current movement type
-        if self.motor_cmd.linear.x == self._forward_speed:
-            
-            if self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
-                self.current_movement = "moving forward and turning right"
-            
-            elif self.motor_cmd.angular.z == self._min_turning_speed_left:
-                self.current_movement = "moving forward and turning left"
-            
-            else:
-                self.current_movement = "moving forward"
-
-        elif self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
-            self.current_movement = "turning right"
-
-        else:
-            self.current_movement = "turning left"
-
-
-        self._pub.publish(self.motor_cmd)
-
-    ##########################################################################################################################################################
-    def right_wall_follower_without_displays(self, wall_on_right, wall_on_front_right, wall_on_front_left, wall_on_left, right_turn, forward_cone):
-        
-        #resetting motor_cmd
-        self.motor_cmd.linear.x = 0.0
-        self.motor_cmd.angular.z = 0.0
-
-        #calculations for switch statement
-        r = 0
-        fr = 0
-        fl = 0
-        l = 0
-        #setting up calculators
-        if wall_on_right:
-            r = 1
-        if wall_on_front_right:
-            fr = 2
-        if wall_on_front_left:
-            fl = 4
-        if wall_on_left:
-            l = 8
-        #var for condtions
-        wall_locations =  l + fl + fr + r
-        
-        if wall_locations == 0: #no walls
-            self.motor_cmd.linear.x = self._forward_speed
-            self.motor_cmd.angular.z = self._max_turning_speed
-
-        elif wall_locations == 1: #wall on right
-            self.motor_cmd.linear.x = self._forward_speed
-
-        elif wall_locations == 2: #wall on front right
-            self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        elif wall_locations == 3: #wall on right and front right
-            self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        elif wall_locations == 4: #wall on front left
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        #CALCULATIONS REQ
-        elif wall_locations == 5: #wall on front left and right
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-
-        #CALCULATIONS REQ?
-        elif wall_locations == 6: #wall on front left and front right
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        elif wall_locations == 7: #wall on right, front right, and front left
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        elif wall_locations == 8: #wall on left
-            self.motor_cmd.linear.x = self._forward_speed
-            self.motor_cmd.angular.z = self._max_turning_speed
-
-        elif wall_locations == 9: #wall on right and left
-            self.motor_cmd.linear.x = self._forward_speed             
-
-        elif wall_locations == 10: #wall on front right and left
-            self.motor_cmd.angular.z = self._min_turning_speed_right
-
-        #CALCULATIONS REQ
-        elif wall_locations == 11: #wall on right, front right, and left
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        elif wall_locations == 12: #wall on left and front left
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        #CALCULATIONS REQ
-        elif wall_locations == 13: #wall on left, front left, and right
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-
-        elif wall_locations == 14: #wall on left, front left, and front right
-            if right_turn:
-                self.motor_cmd.angular.z = self._min_turning_speed_right
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        #CALCULATIONS REQ
-        elif wall_locations == 15: #wall on right, front right, front left, and left
-            if forward_cone:
-                self.motor_cmd.linear.x = self._forward_speed
-
-            else:
-                self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        #calculations for current movement type
-        if self.motor_cmd.linear.x == self._forward_speed:
-            
-            if self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
-                self.current_movement = "moving forward and turning right"
-            
-            elif self.motor_cmd.angular.z == self._min_turning_speed_left:
-                self.current_movement = "moving forward and turning left"
-            
-            else:
-                self.current_movement = "moving forward"
-
-        elif self.motor_cmd.angular.z == self._max_turning_speed or self.motor_cmd.angular.z == self._min_turning_speed_right:
-            self.current_movement = "turning right"
-
-        else:
-            self.current_movement = "turning left"
-        
-        self._pub.publish(self.motor_cmd)
-
-    ##########################################################################################################################################################
-    def consecutive_turns_tracker(self):
-        '''
-            last_movement values can be moved_forward, turned_left, avoided_crash, explored or turned_right
-            current_movement values can be the same
-
-            num_of_consecutive_right_turns will be incremented by 1 in the scenario that the current move is right turn and the last move was forward
-            vice versa for consecutive left_turns
-
-            num_of_consecutive_right turns will be reset to 0 if the current move is left turn and vice versa
-        '''
-        '''
-        if self.last_movement_made == "none" and self._displays:
-
-            print("\n---------------------------------------------------------------------------------------------------------")
-            print("\n\t Setting up the Consecutive Turns Tracker")
-            print("\n---------------------------------------------------------------------------------------------------------")
-        '''
-
-        if self.last_movement_made == "exploring" or self.current_movement == "exploring":
-            self.num_of_consecutive_right_turns = 0
-            self.num_of_consecutive_left_turns = 0
-
-        elif self.last_movement_made == "moving forward":
-
-            if self.current_movement == "turning right" or self.current_movement == "moving forward and turning right":
-                self.num_of_consecutive_left_turns = 0
-                self.num_of_consecutive_right_turns+=1
-
-            elif self.current_movement == "turning left" or self.current_movement == "moving forward and turning left":
-                self.num_of_consecutive_right_turns = 0
-                self.num_of_consecutive_left_turns+=1
-        
-        elif self.last_movement_made == "turning left" or self.current_movement == "moving forward and turning left":
-
-            if self.current_movement == "turning right":
-                self.num_of_consecutive_left_turns = 0
-                self.num_of_consecutive_right_turns+=1
-
-        elif self.last_movement_made == "turning right" or self.current_movement == "moving forward and turning right":
-
-            if self.current_movement == "turning left":
-                self.num_of_consecutive_right_turns = 0
-                self.num_of_consecutive_left_turns+=1
-
-        self.last_movement_made = self.current_movement
-
-    ##########################################################################################################################################################
-    def escape_circle(self, wall_on_right, wall_on_front_right, wall_on_front_left):
-
-        #resetting motor cmds
-        self.motor_cmd.linear.x = 0.0
-        self.motor_cmd.angular.z = 0.0
-
-        if self.last_movement_made != "escaping loop" and self._displays:
-            print("\n---------------------------------------------------------------------------------------------------------")
-            print("\n\t Initializing Escape Loop Procedure")
-            print("\n---------------------------------------------------------------------------------------------------------")
-
-        if wall_on_right:
-
-            #escape object stuck on
-            self.motor_cmd.angular.z = self._min_turning_speed_left
-
-        elif not wall_on_front_left and not wall_on_front_right:
-
-            #move towards a new wall hopefully
             self.motor_cmd.linear.x = self._forward_speed
 
         else:
 
-            #reset conditions to set up with new wall
-            self.num_of_consecutive_left_turns = 0
-            self.num_of_consecutive_right_turns = 0
-            self.oriented = False
-            self.close_enough = False
-            self.aligned = False
+            i = 0
+            num_of_walls_remaining = num_of_walls
+            while i <= num_of_walls:
 
-        self.current_movement = "escaping loop"
+                if num_of_walls == 1:
+
+                    if wall_starting_positions[0] > 0
+
+                elif num_of_walls_remaining == 1:
+                    print("yo")
+
+                num_of_walls_remaining-=1
+                i+=1
+
+
         self._pub.publish(self.motor_cmd)
 
-    ##########################################################################################################################################################
+    #########################################################################################################################################################
     def initial_print(self):
 
         if self._displays:
@@ -1551,176 +1118,17 @@ class WallFollower:
         self.first_print = False
 
 #############################################################################################################################################################
-class SimHeadUpDown:
-
-    #########################################################################################################################################################
-    def __init__(self, current_position, desired_position, seconds, displays = True):
-
-        self._current_position = current_position
-        self._desired_position = desired_position
-        self.trajectory_head_client = actionlib.SimpleActionClient('/stretch_head_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-        self.rad_per_deg = math.pi / 180.0
-        self.medium_deg = 6.0
-        self.medium_rad = self.rad_per_deg * self.medium_deg
-        self.medium_translate = 0.04
-        self.joint_sub = rospy.Subscriber('/joint_states', JointState, self.joint_states_callback)
-        self._joint_state = JointState()
-        self.twist = Twist()
-        self.retrieved_joint_state = False
-        start_time = time()
-        self._seconds = seconds
-        self._first_print = True
-        self._displays = displays
-
-        while True:
-
-            if self._first_print and self._displays:
-                self.initial_print()
-
-            current_time = time()
-            elapsed_time = current_time - start_time
-
-            if self.retrieved_joint_state:
-                self.repo_calculator()
-
-            if elapsed_time > self._seconds:
-                break
-
-    #########################################################################################################################################################
-    def repo_calculator(self):
-
-        if self._desired_position == "forward":
-            self.repo_head_forward()
-
-        elif self._desired_position == "down":
-            self.repo_head_down()
-
-        else:
-            self.error_msg()
-    
-    #########################################################################################################################################################
-    def joint_states_callback(self, joint_state):
-        self._joint_state = joint_state
-        self.retrieved_joint_state = True
-
-    #########################################################################################################################################################
-    def get_deltas(self):
-
-        deltas = {'rad': self.medium_rad, 'translate': self.medium_translate}
-        return deltas
-
-    #########################################################################################################################################################
-    def repo_head_forward(self):
-
-        if self._current_position == "forward" and self._displays:
-            print("\n\tHead camera already in desired position.")
-
-        elif self._current_position == "down":
-            self.raise_up()
-
-        else:
-            self.error_msg() #needs to be in down position to be raised to forward straight position
-
-    #########################################################################################################################################################
-    def repo_head_down(self):
-
-        if self._current_position == "down" and self._displays:
-            print("/n/t Head camera already in desired position.")
-
-        elif self._current_position == "forward":
-            self.move_down()
-
-        else:
-            self.error_msg()
-
-    #########################################################################################################################################################
-    def raise_up(self):
-        command = {'joint': 'joint_head_tilt', 'delta': (2.0 * self.get_deltas()['rad'])}
-        #command = {'joint': 'joint_head_tilt', 'delta': -(2.0 * self.get_deltas()['rad'])}
-        #self._sim_teleop.send_command(command)
-        self.send_command(command)
-
-    #########################################################################################################################################################
-    def move_down(self):
-        command = {'joint': 'joint_head_tilt', 'delta': -(2.0 * self.get_deltas()['rad'])}
-        #self._sim_teleop.send_command(command)
-        self.send_command(command)
-
-    #########################################################################################################################################################
-    def send_command(self, command):
-        
-        joint_state = self._joint_state
-
-        point = JointTrajectoryPoint()
-        point.time_from_start = rospy.Duration(0.2)
-        trajectory_goal = FollowJointTrajectoryGoal()
-        trajectory_goal.goal_time_tolerance = rospy.Time(1.0)
-
-        joint_name = command['joint']
-
-        if joint_name in ['joint_lift', 'joint_wrist_yaw', 'joint_head_pan', 'joint_head_tilt']:
-            trajectory_goal.trajectory.joint_names = [joint_name]
-            joint_index = joint_state.name.index(joint_name)
-            joint_value = joint_state.position[joint_index]
-            delta = command['delta']
-            new_value = joint_value + delta
-            point.positions = [new_value]
-        elif joint_name in ["joint_gripper_finger_left", "wrist_extension"]:
-            if joint_name == "joint_gripper_finger_left":
-                trajectory_goal.trajectory.joint_names = ['joint_gripper_finger_left', 'joint_gripper_finger_right']
-            else:
-                trajectory_goal.trajectory.joint_names = ['joint_arm_l0','joint_arm_l1', 'joint_arm_l2', 'joint_arm_l3']
-            positions = []
-            for j_name in trajectory_goal.trajectory.joint_names:
-                joint_index = joint_state.name.index(j_name)
-                joint_value = joint_state.position[joint_index]
-                delta = command['delta']
-                new_value = joint_value + delta/len(trajectory_goal.trajectory.joint_names)
-                positions.append(new_value)
-            point.positions = positions
-
-        trajectory_goal.trajectory.points = [point]
-        trajectory_goal.trajectory.header.stamp = rospy.Time.now()
-        self.trajectory_head_client.send_goal(trajectory_goal)
-
-    #########################################################################################################################################################
-    def error_msg(self):
-        if self._displays:
-            print("\n\t\t:: HEAD POSITIONS ERROR ::")
-            print("\t Either the current position or desired position is incorrect\n")
-
-    #########################################################################################################################################################
-    def initial_print(self):
-
-        print("\n#########################################################################################################")
-        print("\n---------------------------------------------------------------------------------------------------------")
-        print("\n\t Repositioning Head Camera")
-        print("\n---------------------------------------------------------------------------------------------------------")
-
-        self._first_print = False
-
-##############################################################################################################################################################
-def fix_head_position():
-    os.system(path)
-
-##############################################################################################################################################################
 
     # MAIN #
 
-##############################################################################################################################################################
+#############################################################################################################################################################
 def main(path):
 
     try:
 
-        hd = SimHeadUpDown("forward", "down", 5.2)
-
         wf = WallFollower()
-        
-        rospy.on_shutdown(fix_head_position)
 
     except rospy.ROSInterruptException:
-        #hu = SimHeadUpDown("down", "forward", 15)
-        os.system(path)
         pass
 
 if __name__ == '__main__':
