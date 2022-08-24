@@ -133,7 +133,7 @@
 
     // Subscribers
 
-    alexa_topic.subscribe(function(m) {
+    command_topic.subscribe(function(m) {
         document.getElementById("alexa_msgs").innerHTML = m.data;
     });
 

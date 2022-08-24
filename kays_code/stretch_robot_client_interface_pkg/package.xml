@@ -52,7 +52,7 @@
   <build_depend>rosbridge_server</build_depend>
   <build_export_depend>rosbridge_server</build_export_depend>
   <exec_depend>rosbridge_server</exec_depend>
-
+  <depend>nodejs</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

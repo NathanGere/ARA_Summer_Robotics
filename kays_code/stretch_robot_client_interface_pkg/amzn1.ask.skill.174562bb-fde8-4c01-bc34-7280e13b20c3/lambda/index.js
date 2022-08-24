@@ -402,3 +402,15 @@ exports.handler = Alexa.SkillBuilders.custom()
         new persistenceAdapter.S3PersistenceAdapter({bucketName:process.env.S3_PERSISTENCE_BUCKET}))
     .withApiClient(new Alexa.DefaultApiClient())
     .lambda();
+
+/**var AlexaSkillServer = function(config) {
+    var self = {};
+    config = config || {};
+};
+AlexaSkillServer.start = function(config) {
+    var appServerInstance = new AlexaSkillServer(config);
+    appServerInstance.start();
+    return ServerInstance;
+};
+
+module.exports = AlexaSkillServer;**/
