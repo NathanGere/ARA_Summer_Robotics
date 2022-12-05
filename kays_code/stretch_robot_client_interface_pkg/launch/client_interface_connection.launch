@@ -3,10 +3,10 @@
   <!-- ARGUMENTS -->
   <arg name="laser_topic" default="/scan" />
   <arg name="warning_topic" default="/client_warning" />
-  <arg name="joint_states_topic" default="/joint_states" />
-    <arg name="twist_topic" default="/stretch_diff_drive_controller/cmd_vel" />
-  <arg name="arm_ActionClient" default="/stretch_arm_controller/follow_joint_trajectory" />
-  <arg name="gripper_ActionClient" default="/stretch_gripper_controller/follow_joint_trajectory" />
+  <arg name="joint_states_topic" default="/stretch/joint_states" />
+    <arg name="twist_topic" default="/stretch/cmd_vel" />
+  <arg name="arm_ActionClient" default="/stretch_controller/follow_joint_trajectory" />
+  <arg name="gripper_ActionClient" default="/stretch_controller/follow_joint_trajectory" />
 
   <!-- ROSBRIDGE -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>

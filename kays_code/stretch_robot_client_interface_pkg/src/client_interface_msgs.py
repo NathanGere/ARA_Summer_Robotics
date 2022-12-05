@@ -133,7 +133,7 @@ def send_command(endclient, command) :
             point.positions = [new_value]
         elif joint_name in ["joint_gripper", "wrist_extension"]:
             if joint_name == "joint_gripper":
-                trajectory_goal.trajectory.joint_names = ['joint_gripper_finger_left', 'joint_gripper_finger_right']
+                trajectory_goal.trajectory.joint_names = ['joint_gripper_finger_left']
             else:
                 trajectory_goal.trajectory.joint_names = ['joint_arm_l0','joint_arm_l1', 'joint_arm_l2', 'joint_arm_l3']
             positions = []
